@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require("mongoose"); // Importa Mongoose para definir el esquema de configuración empresarial
 
 const empresaConfigSchema = new mongoose.Schema({
     nombre_comercial: {
@@ -33,4 +33,4 @@ const empresaConfigSchema = new mongoose.Schema({
     }
 });
 
-module.exports = mongoose.model("EmpresaConfig", empresaConfigSchema);
+module.exports = mongoose.model("EmpresaConfig", empresaConfigSchema); // Exporta el modelo de configuración de la empresa

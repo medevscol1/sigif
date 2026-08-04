@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require("mongoose"); // Importa Mongoose para definir el esquema y el modelo
 
 const productoSchema = new mongoose.Schema({
     nombre: {
@@ -37,7 +37,7 @@ const productoSchema = new mongoose.Schema({
     }
 });
 
-// Actualiza automáticamente la fecha de modificación
+// Actualiza automáticamente la fecha de modificación antes de guardar
 productoSchema.pre("save", function (next) {
     this.fecha_actualizacion = Date.now();
     next();

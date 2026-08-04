@@ -7,16 +7,18 @@ const app = express(); // Crea la instancia de la aplicación Express
 
 app.use(express.json()); // Habilita el parseo de JSON en el cuerpo de las peticiones
 
+// Ruta raíz: responde con un mensaje indicando que el servidor está activo
 app.get("/", (req, res) => {
-    res.send("Servidor SIGIF funcionando"); // Responde en la ruta raíz con un mensaje de estado
+    res.send("Servidor SIGIF funcionando");
 });
 
+// Maneja el resultado de la promesa de conexión a MongoDB
 conexion
     .then(() => {
-        console.log("Conexion exitosa a MongoDB"); // Mensaje cuando la conexión a MongoDB es exitosa
+        console.log("Conexion exitosa a MongoDB"); // Se ejecuta cuando la conexión es exitosa
     })
     .catch((error) => {
-        console.log("Error conectando a MongoDB:"); // Muestra el error si la conexión falla
+        console.log("Error conectando a MongoDB:"); // Se ejecuta cuando hay un error al conectar
         console.log(error);
     });
 

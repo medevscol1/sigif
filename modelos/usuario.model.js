@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require("mongoose"); // Importa Mongoose para definir el esquema y el modelo
 
 const usuarioSchema = new mongoose.Schema({
     nombre: {

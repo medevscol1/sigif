@@ -12,7 +12,6 @@
   },
   "license": "MIT",
   "author": "Machadodev1 <machadoandres444@gmail.com>",
-  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

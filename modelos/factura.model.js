@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require("mongoose"); // Importa Mongoose para definir el esquema y el modelo de factura
 
 const facturaSchema = new mongoose.Schema({
     cliente: {
@@ -16,4 +16,4 @@ const facturaSchema = new mongoose.Schema({
     }
 });
 
-module.exports = mongoose.model("Factura", facturaSchema);
+module.exports = mongoose.model("Factura", facturaSchema); // Exporta el modelo de Factura

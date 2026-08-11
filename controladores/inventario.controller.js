@@ -1,54 +1,62 @@
-const Producto = require("../models/producto.model");
+const Producto = require('../models/producto.model');
 
-// MOSTRAR INVENTARIO
+// Mostrar inventario
 exports.inventario = async (req, res) => {
     try {
-        const producto = await Producto.find();
 
-        res.render("inventario/inventario", {
-            producto
+        const productos = await Producto.find();
+
+        res.render('pages/inventario', {
+            productos
         });
 
     } catch (error) {
-        console.error(error);
-        res.status(500).send("Error al cargar el inventario.");
+        console.error("Error al cargar el inventario:", error);
+
+        res.status(500).send(
+            "Error al cargar el inventario: " + error.message
+        );
     }
 };
 
 
-// MOSTRAR INVENTARIO
-exports.invHistorial = async (req, res) => {
+// Mostrar control de inventario
+exports.control = async (req, res) => {
     try {
-        const movimientos = await Producto
-            .find()
-            .sort({ _id: -1 })
-            .limit(2);
 
-        movimientos.forEach((movimiento) => {
-            movimiento.total = movimiento.precio * movimiento.stock;
+        const productos = await Producto.find({
+            activo: true
         });
 
-        res.render("inventario/inv_historial", {
-            movimientos
+        res.render('pages/inventario/control', {
+            productos
         });
 
     } catch (error) {
-        console.error(error);
-        res.status(500).send("Error al cargar el historial.");
+        console.error("Error al cargar el control de inventario:", error);
+
+        res.status(500).send(
+            "Error al cargar el control de inventario: " + error.message
+        );
     }
 };
 
-// MOSTRAR INVENTARIO
-exports.invControl = async (req, res) => {
-    try {
-        const producto = await Producto.find();
 
-        res.render("inventario/inv_control", {
-            producto
+// Mostrar historial de inventario
+exports.historial = async (req, res) => {
+    try {
+
+        const productos = await Producto.find();
+
+        res.render('pages/inventario/historial', {
+            productos
         });
 
     } catch (error) {
-        console.error(error);
-        res.status(500).send("Error al cargar el control de inventario.");
+        console.error("Error al cargar el historial:", error);
+
+        res.status(500).send(
+            "Error al cargar el historial: " + error.message
+        );
     }
 };

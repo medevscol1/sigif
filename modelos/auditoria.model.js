@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require("mongoose"); // Importa Mongoose para definir el esquema y el modelo de auditoría
 
 const auditoriaSchema = new mongoose.Schema({
     usuario: {
@@ -28,4 +28,4 @@ const auditoriaSchema = new mongoose.Schema({
     }
 });
 
-module.exports = mongoose.model("Auditoria", auditoriaSchema);
+module.exports = mongoose.model("Auditoria", auditoriaSchema); // Exporta el modelo de Auditoría

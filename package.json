@@ -14,11 +14,14 @@
   "author": "Machadodev1 <machadoandres444@gmail.com>",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
+    "ejs": "^3.1.9",
     "express": "^5.2.1",
+    "express-ejs-layouts": "^2.5.1",
     "mongoose": "^9.9.1",
     "morgan": "^1.11.0"
   }

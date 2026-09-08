@@ -182,7 +182,11 @@ app.post('/usuarios/eliminar', usuarioController.findOneAndDelete);
 app.get('/usuarios/crear', (req, res) => res.render('usuarios/crear_usuarios'));
 app.get('/usuarios/editar/:id', usuarioController.findOne);
 app.get('/login', (req, res) => res.render('usuarios/login'));
+app.post('/login', usuarioController.login);
 app.get('/logout', (req, res) => { /* implementar logout */ res.redirect('/login'); });
+
+// Definición segura del puerto (usa process.env.PORT si existe, o 1514 por defecto)
+const PORT = process.env.PORT || 1514;
 
 // Maneja el resultado de la promesa de conexión a MongoDB
 conexion
@@ -194,6 +198,6 @@ conexion
         console.log(error);
     });
 
-app.listen(1514, () => {
-    console.log("Servidor conectado en puerto https: //localhost:1514"); // Inicia el servidor en el puerto 1514
+app.listen(PORT, () => {
+    console.log(`Servidor conectado en http://localhost:${PORT}`); // Inicia el servidor correctamente
 });

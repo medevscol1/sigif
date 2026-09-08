@@ -5,6 +5,37 @@ exports.home = async (req, res) => {
   res.render('dashboard_index');
 };
 
+// Valida las credenciales del formulario de inicio de sesión.
+exports.login = async (req, res) => {
+  try {
+    const nombre = String(req.body.nombre || '').trim();
+    const contra = String(req.body.contra || '');
+
+    if (!nombre || !contra) {
+      return res.status(400).render('usuarios/login', {
+        request: req,
+        messages: [{ type: 'error', text: 'Ingrese su usuario y contraseña.' }]
+      });
+    }
+
+    const usuario = await Usuario.findOne({ nombre });
+    if (!usuario || !usuario.activo || usuario.contra !== contra) {
+      return res.status(401).render('usuarios/login', {
+        request: req,
+        messages: [{ type: 'error', text: 'Usuario o contraseña incorrectos.' }]
+      });
+    }
+
+    return res.redirect('/dashboard');
+  } catch (error) {
+    console.error('Error iniciando sesión:', error);
+    return res.status(500).render('usuarios/login', {
+      request: req,
+      messages: [{ type: 'error', text: 'No fue posible iniciar sesión.' }]
+    });
+  }
+};
+
 // exports.find: lista todos los usuarios y devuelve el resultado en HTML o JSON según el tipo de petición
 exports.find = async (req, res) => {
   try {

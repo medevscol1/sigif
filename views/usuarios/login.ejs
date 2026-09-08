@@ -1,8 +1,41 @@
-<%- include('../partials/header') %>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <link rel="stylesheet" href="static/css/style1.css">
+</head>
+<body class="login-body">
 
-<section>
-  <h1>Login</h1>
-  <p>Página de login convertida; adapta acción del form a tu backend de Node.</p>
-</section>
+    <div class="login-card">
+        <h1>Inicio de sesión</h1>
+        <p>Ingrese su nombre de usuario y contraseña</p>
 
-<%- include('../partials/footer') %>
+        <form action="/login" method="post">
+            <div class="input-group">
+                <label>Nombre de usuario</label>
+                <input type="text" name="nombre" required>
+            </div>
+
+            <div class="input-group">
+                <label>Contraseña</label>
+                <input type="password" name="contra" required>
+            </div>
+
+            <button type="submit" class="login-button">
+                Ingresar
+            </button>
+        </form>
+        <div>
+        <% if (typeof messages !== 'undefined' && messages.length > 0) { %>
+            <% messages.forEach(message => { %>
+                <div class="alert <%= message.type %>">
+                    <%= message.text %>
+                </div>
+            <% }) %>
+        <% } %>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,8 +1,210 @@
-<%- include('partials/header') %>
+<%- include('../partials/header') %>
 
-<section>
-  <h1>Inventario</h1>
-  <p>Lista de inventario — revisar filtros y acciones convertidas.</p>
-</section>
+<section class="inventario-page">
 
-<%- include('partials/footer') %>
+  <header class="inventario-header">
+    <div>
+      <h1>Gestión de inventario</h1>
+    </div>
+  </header>
+
+  <% if (messages && messages.length) { %>
+    <% messages.forEach(function(message){ %>
+      <div class="alert alert-info"><%= message %></div>
+    <% }) %>
+  <% } %>
+
+  <div class="menu-horizontal">
+    <a href="/inventario/control">Control de stock</a>
+    <a href="/inventario/ingresos">Ingresos al inventario</a>
+    <a href="/inventario">Catalogo de ventas</a>
+    <a href="/inventario/historial">Historial de movimientos</a>
+  </div>
+
+  <div class="inventario-container2">
+
+    <div class="cv-toolbar">
+      <div class="cv-toolbar-left">
+        <h2 class="cv-title">Inventario</h2>
+        <p class="cv-subtitle">Selecciona productos para agregar al carrito o consultar disponibilidad</p>
+      </div>
+      <div class="cv-toolbar-right">
+        <div class="cv-search-wrapper">
+          <i class="bi bi-search cv-search-icon"></i>
+          <input type="text" id="buscadorProductos" class="cv-search-input" placeholder="Buscar por nombre o ID…">
+        </div>
+        <button id="btnCarrito" class="cv-cart-btn" data-bs-toggle="offcanvas" data-bs-target="#carritoPanel">
+          <i class="bi bi-cart3"></i>
+          <span class="cv-cart-label">Carrito</span>
+          <span id="cartBadge" class="cv-cart-badge" style="display:none;">0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Resumen rápido de métricas -->
+    <div class="cs-resumen">
+      <div class="cs-resumen-card cs-total">
+        <i class="bi bi-grid-3x3-gap cs-resumen-icon"></i>
+        <div>
+          <span class="cs-resumen-num" id="totalProductos"><%= productos ? productos.length : 0 %></span>
+          <span class="cs-resumen-label">Total productos</span>
+        </div>
+      </div>
+      <div class="cs-resumen-card cs-disponible">
+        <i class="bi bi-check-circle cs-resumen-icon"></i>
+        <div>
+          <span class="cs-resumen-num" id="totalOk">–</span>
+          <span class="cs-resumen-label">Con stock</span>
+        </div>
+      </div>
+      <div class="cs-resumen-card cs-alerta">
+        <i class="bi bi-exclamation-triangle cs-resumen-icon"></i>
+        <div>
+          <span class="cs-resumen-num" id="totalBajo">–</span>
+          <span class="cs-resumen-label">Stock bajo (&lt;5)</span>
+        </div>
+      </div>
+      <div class="cs-resumen-card cs-agotado">
+        <i class="bi bi-x-circle cs-resumen-icon"></i>
+        <div>
+          <span class="cs-resumen-num" id="totalAgotado">–</span>
+          <span class="cs-resumen-label">Agotados</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cards-grid" id="productosGrid">
+      <% if (productos && productos.length) { %>
+        <% productos.forEach(function(producto){ %>
+          <% const stock = producto.stock || 0; %>
+          <% const estado = stock === 0 ? 'agotado' : (stock < 5 ? 'bajo' : 'ok'); %>
+          <div class="tarjeta-producto-venta tarjeta-stock <%= stock === 0 ? 'ts-agotado sin-stock' : (stock < 5 ? 'ts-bajo stock-bajo' : 'ts-ok') %>"
+             data-nombre="<%= (producto.nombre||'').toLowerCase() %>"
+             data-id="<%= producto._id %>"
+             data-estado="<%= estado %>">
+
+            <div class="ts-header tpv-header">
+              <span class="ts-id tpv-id">ID #<%= producto._id %></span>
+              <% if (stock === 0) { %>
+                <span class="ts-badge ts-badge-agotado tpv-badge agotado"><i class="bi bi-x-circle-fill"></i> Agotado</span>
+              <% } else if (stock < 5) { %>
+                <span class="ts-badge ts-badge-bajo tpv-badge stock-critico"><i class="bi bi-exclamation-triangle-fill"></i> Stock bajo</span>
+              <% } else { %>
+                <span class="ts-badge ts-badge-ok tpv-badge disponible"><i class="bi bi-check-circle-fill"></i> Disponible</span>
+              <% } %>
+            </div>
+
+            <div class="ts-body tpv-body">
+              <div class="ts-icon-wrap <%= stock === 0 ? 'ts-icon-agotado' : (stock < 5 ? 'ts-icon-bajo' : 'ts-icon-ok') %>">
+                <i class="bi bi-box-seam"></i>
+              </div>
+              <strong class="ts-nombre tpv-nombre"><%= producto.nombre %></strong>
+              <% if (producto.categoria) { %>
+                <span class="ts-categoria tpv-categoria"><%= producto.categoria %></span>
+              <% } %>
+            </div>
+
+            <div class="ts-stock-visual">
+              <div class="ts-stock-info">
+                <span class="ts-stock-num <%= stock === 0 ? 'ts-num-agotado' : (stock < 5 ? 'ts-num-bajo' : 'ts-num-ok') %>"><%= stock %></span>
+                <span class="ts-stock-unit">unidades</span>
+              </div>
+              <div class="ts-barra-wrap">
+                <% let width = 100; %>
+                <% if (stock >= 50) width = 100; else if (stock >= 20) width = stock; else if (stock >=5) width = stock; else if (stock > 0) width = stock; else width = 100; %>
+                <div class="ts-barra <%= stock === 0 ? 'ts-barra-agotado' : (stock < 5 ? 'ts-barra-bajo' : 'ts-barra-ok') %>" style="width:<%= width %>%;"></div>
+              </div>
+            </div>
+
+            <div class="tpv-footer ts-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 18px 16px; border-top: 1px solid #f1f5f9; margin-top: auto;">
+              <span class="ts-precio tpv-precio" style="font-weight: 800; font-size: 1.1rem; color: #1e293b;">$<%= intcomma(producto.precio) %></span>
+              <button class="tpv-add-btn agregar <%= stock === 0 ? 'tpv-add-disabled' : '' %>" data-id="<%= producto._id %>" data-title="<%= producto.nombre %>" data-price="<%= producto.precio %>" data-stock="<%= stock %>" <%= stock === 0 ? 'disabled' : '' %> >
+                <% if (stock === 0) { %>
+                  <i class="bi bi-x-circle"></i> Sin stock
+                <% } else { %>
+                  <i class="bi bi-cart-plus"></i> Agregar
+                <% } %>
+              </button>
+            </div>
+
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="cv-empty">
+          <i class="bi bi-box-seam cv-empty-icon"></i>
+          <p>No hay productos disponibles.</p>
+        </div>
+      <% } %>
+    </div>
+
+  </div>
+
+<!-- ===== PANEL CARRITO ===== -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="carritoPanel">
+  <div class="offcanvas-header carrito-header">
+    <div>
+      <h5 class="offcanvas-title">🛒 Tu carrito</h5>
+      <span id="carritoCount" class="carrito-count">0 productos</span>
+    </div>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body carrito-body d-flex flex-column">
+    <div id="listaCarrito" class="carrito-lista flex-grow-1 overflow-auto"></div>
+
+    <div class="carrito-descuento">
+      <input type="text" id="descuento" class="carrito-desc-input" placeholder="Código de descuento">
+      <button class="carrito-desc-btn" id="btn-des">Aplicar</button>
+    </div>
+
+    <div class="carrito-resumen">
+      <div class="resumen-row">
+        <span>Subtotal</span>
+        <span id="pre">$0.00</span>
+      </div>
+      <div class="resumen-row descuento-row" id="des-row" style="display:none;">
+        <span id="des">Descuento (0%)</span>
+        <span id="des-monto" class="color-descuento">-$0.00</span>
+      </div>
+      <div class="resumen-row resumen-total">
+        <span>Total</span>
+        <span id="total">$0.00</span>
+      </div>
+      <button type="button" class="carrito-pagar-btn" id="btnPagar">
+        <i class="bi bi-credit-card"></i> Proceder al pago
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999;">
+  <div id="toastAdd" class="toast align-items-center text-bg-success border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body"><i class="bi bi-check-circle-fill me-2"></i>Producto agregado al carrito</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Eliminar -->
+<div class="modal fade" id="modalAviso" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content cv-modal">
+      <div class="modal-header cv-modal-header">
+        <h5 class="modal-title">Confirmar eliminación</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body cv-modal-body">
+        ¿Deseas eliminar este producto del carrito?
+      </div>
+      <div class="modal-footer cv-modal-footer">
+        <button class="cv-modal-cancel" data-bs-dismiss="modal">Cancelar</button>
+        <button class="cv-modal-confirm" id="btnEliminar">Eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/inventario_client.js"></script>
+
+<%- include('../partials/footer') %>

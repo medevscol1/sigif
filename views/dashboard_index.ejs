@@ -1,66 +1,37 @@
+<%- include('partials/header') %>
+
+<main>
 <header class="dashboard-header">
     <h1>Dashboard</h1>
     <p>Resumen general de tu negocio</p>
-</header>
+ </header>
 
-<% if (messages && messages.length) { %>
-    <% messages.forEach(function(message){ %>
-        <div class="alert alert-<%= message.tags %>">
-            <%= message.text || message %>
-        </div>
-    <% }) %>
-<% } %>
-
-<% if (typeof low_stock !== 'undefined' && low_stock > 0) { %>
-    <div class="alert warning">
-        Hay <%= low_stock %> producto<%= (low_stock !== 1) ? 's' : '' %> con stock bajo.
-        <a href="#?filtro=bajo">Ver detalles</a>
-    </div>
-<% } %>
-
-<% if (typeof out_of_stock !== 'undefined' && out_of_stock > 0) { %>
-    <div class="alert danger">
-        Hay <%= out_of_stock %> producto<%= (out_of_stock !== 1) ? 's' : '' %> agotado<%= (out_of_stock !== 1) ? 's' : '' %>.
-        <a href="#?filtro=agotado">Ver detalles</a>
-    </div>
-<% } %>
-
-<section class="metricas">
-
+ <!-- contenido del dashboard (igual que antes) -->
+ <section class="metricas">
     <div class="tarjetas">
         <h3>Usuarios Activos</h3>
-        <strong class="valor"><%= total %></strong>
+        <strong class="valor"><%= total || 0 %></strong>
     </div>
-
     <div class="tarjetas">
         <h3>Productos</h3>
-        <strong class="valor"><%= to %></strong>
+        <strong class="valor"><%= to || 0 %></strong>
     </div>
-
     <div class="tarjetas">
         <h3>Stock Bajo</h3>
-        <strong class="valor"><%= low_stock %></strong>
+        <strong class="valor"><%= low_stock || 0 %></strong>
     </div>
-
     <div class="tarjetas">
         <h3>Agotados</h3>
-        <strong class="valor"><%= out_of_stock %></strong>
+        <strong class="valor"><%= out_of_stock || 0 %></strong>
     </div>
-
     <div class="tarjetas">
         <h3>Ventas del Mes</h3>
-        <strong class="valor">
-            $<%= ventas_totales %>
-        </strong>
+        <strong class="valor">$<%= ventas_totales || 0 %></strong>
     </div>
+ </section>
 
-</section>
-
-<section class="bottom-sections">
-
-    <!-- ACTIVIDAD REAL -->
+ <section class="bottom-sections">
     <div class="Actividad-recientes">
-
         <div class="panel-heading">
             <div>
                 <span class="panel-kicker">Registro del sistema</span>
@@ -68,9 +39,7 @@
             </div>
             <span class="panel-count"><%= actividades_recientes ? actividades_recientes.length : 0 %></span>
         </div>
-
         <% if (actividades_recientes && actividades_recientes.length) { %>
-
             <ul>
                 <% actividades_recientes.forEach(function(actividad){ %>
                     <li class="actividad-item">
@@ -88,48 +57,29 @@
                     </li>
                 <% }) %>
             </ul>
-
         <% } else { %>
-
-            <p>
-                No hay actividades registradas todavía.
-            </p>
-
+            <p>No hay actividades registradas todavía.</p>
         <% } %>
-
     </div>
 
-
-    <!-- ALERTAS REALES -->
     <div class="alertas-sistemas">
-
         <h2>Alertas del Sistema</h2>
-
         <% if ((low_stock && low_stock > 0) || (out_of_stock && out_of_stock > 0)) { %>
-
             <ul>
                 <% if (low_stock && low_stock > 0) { %>
-                    <li class="alerta-agotados">
-                        Stock bajo: <%= low_stock %> producto<%= (low_stock !== 1) ? 's' : '' %>.
-                        <a href="#?filtro=bajo">Ver detalles</a>
-                    </li>
+                    <li class="alerta-agotados">Stock bajo: <%= low_stock %> producto<%= (low_stock !== 1) ? 's' : '' %>. <a href="#?filtro=bajo">Ver detalles</a></li>
                 <% } %>
                 <% if (out_of_stock && out_of_stock > 0) { %>
-                    <li>
-                        Agotados: <%= out_of_stock %> producto<%= (out_of_stock !== 1) ? 's' : '' %>.
-                        <a href="#?filtro=agotado">Ver detalles</a>
-                    </li>
+                    <li>Agotados: <%= out_of_stock %> producto<%= (out_of_stock !== 1) ? 's' : '' %>. <a href="#?filtro=agotado">Ver detalles</a></li>
                 <% } %>
             </ul>
-
         <% } else { %>
-
-            <p>
-                No hay alertas de stock.
-            </p>
-
+            <p>No hay alertas de stock.</p>
         <% } %>
-
     </div>
 
-</section>
+ </section>
+
+</main>
+
+<%- include('partials/footer') %>

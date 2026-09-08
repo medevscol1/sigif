@@ -1,8 +1,34 @@
-<%- include('partials/header') %>
+<%- include('../partials/header') %>
 
 <section>
   <h1>Crear Usuario</h1>
-  <p>Formulario de creación de usuario convertido a EJS.</p>
+  <form action="/usuarios/crear" method="post">
+    <div class="mb-3">
+      <label class="form-label">Nombre</label>
+      <input name="nombre" class="form-control" required />
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Contraseña</label>
+      <input name="contra" type="password" class="form-control" required />
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Teléfono</label>
+      <input name="telefono" class="form-control" />
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Cargo</label>
+      <select name="cargo" class="form-control">
+        <option>Empleado</option>
+        <option>Admin</option>
+      </select>
+    </div>
+    <div class="mb-3 form-check">
+      <input type="checkbox" name="activo" class="form-check-input" id="activo" checked>
+      <label class="form-check-label" for="activo">Activo</label>
+    </div>
+    <button class="btn btn-primary" type="submit">Crear usuario</button>
+    <a href="/usuarios" class="btn btn-secondary">Cancelar</a>
+  </form>
 </section>
 
-<%- include('partials/footer') %>
+<%- include('../partials/footer') %>

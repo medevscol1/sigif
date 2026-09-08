@@ -1,0 +1,85 @@
+<%- include('partials/header') %>
+
+<main>
+<header class="dashboard-header">
+    <h1>Dashboard</h1>
+    <p>Resumen general de tu negocio</p>
+ </header>
+
+ <!-- contenido del dashboard (igual que antes) -->
+ <section class="metricas">
+    <div class="tarjetas">
+        <h3>Usuarios Activos</h3>
+        <strong class="valor"><%= total || 0 %></strong>
+    </div>
+    <div class="tarjetas">
+        <h3>Productos</h3>
+        <strong class="valor"><%= to || 0 %></strong>
+    </div>
+    <div class="tarjetas">
+        <h3>Stock Bajo</h3>
+        <strong class="valor"><%= low_stock || 0 %></strong>
+    </div>
+    <div class="tarjetas">
+        <h3>Agotados</h3>
+        <strong class="valor"><%= out_of_stock || 0 %></strong>
+    </div>
+    <div class="tarjetas">
+        <h3>Ventas del Mes</h3>
+        <strong class="valor">$<%= ventas_totales || 0 %></strong>
+    </div>
+ </section>
+
+ <section class="bottom-sections">
+    <div class="Actividad-recientes">
+        <div class="panel-heading">
+            <div>
+                <span class="panel-kicker">Registro del sistema</span>
+                <h2>Actividad Reciente</h2>
+            </div>
+            <span class="panel-count"><%= actividades_recientes ? actividades_recientes.length : 0 %></span>
+        </div>
+        <% if (actividades_recientes && actividades_recientes.length) { %>
+            <ul>
+                <% actividades_recientes.forEach(function(actividad){ %>
+                    <li class="actividad-item">
+                        <span class="actividad-icon" aria-hidden="true"><i class="bi bi-activity"></i></span>
+                        <div class="actividad-body">
+                            <div class="actividad-main">
+                                <strong><%= actividad.usuario %></strong>
+                                <span><%= actividad.accion %></span>
+                            </div>
+                            <div class="actividad-meta">
+                                <span class="actividad-modulo"><%= actividad.modulo %></span>
+                                <time datetime="<%= actividad.fecha %>"><%= actividad.fecha %></time>
+                            </div>
+                        </div>
+                    </li>
+                <% }) %>
+            </ul>
+        <% } else { %>
+            <p>No hay actividades registradas todavía.</p>
+        <% } %>
+    </div>
+
+    <div class="alertas-sistemas">
+        <h2>Alertas del Sistema</h2>
+        <% if ((low_stock && low_stock > 0) || (out_of_stock && out_of_stock > 0)) { %>
+            <ul>
+                <% if (low_stock && low_stock > 0) { %>
+                    <li class="alerta-agotados">Stock bajo: <%= low_stock %> producto<%= (low_stock !== 1) ? 's' : '' %>. <a href="#?filtro=bajo">Ver detalles</a></li>
+                <% } %>
+                <% if (out_of_stock && out_of_stock > 0) { %>
+                    <li>Agotados: <%= out_of_stock %> producto<%= (out_of_stock !== 1) ? 's' : '' %>. <a href="#?filtro=agotado">Ver detalles</a></li>
+                <% } %>
+            </ul>
+        <% } else { %>
+            <p>No hay alertas de stock.</p>
+        <% } %>
+    </div>
+
+ </section>
+
+</main>
+
+<%- include('partials/footer') %>

@@ -1,5 +1,5 @@
-const Producto = require("../models/producto.model");
-const Auditoria = require("../models/auditoria.model");
+const Producto = require("../modelos/producto.model");
+const Auditoria = require("../modelos/auditoria.model");
 
 // Listar productos
 exports.productos = async (req, res) => {
@@ -37,7 +37,7 @@ exports.crearProducto = async (req, res) => {
         await producto.save();
 
         await Auditoria.create({
-            usuario: req.session.logueado.nombre,
+            usuario: (req.session && req.session.logueado && req.session.logueado.nombre) ? req.session.logueado.nombre : 'Sistema',
             accion: `CREO UN PRODUCTO: ${producto.nombre}`,
             modulo: "PRODUCTOS"
         });
@@ -91,7 +91,7 @@ exports.actualizarProducto = async (req, res) => {
         await producto.save();
 
         await Auditoria.create({
-            usuario: req.session.logueado.nombre,
+            usuario: (req.session && req.session.logueado && req.session.logueado.nombre) ? req.session.logueado.nombre : 'Sistema',
             accion: `ACTUALIZO UN PRODUCTO: ${producto.nombre}`,
             modulo: "PRODUCTOS"
         });
@@ -119,7 +119,7 @@ exports.eliminarProducto = async (req, res) => {
         await producto.deleteOne();
 
         await Auditoria.create({
-            usuario: req.session.logueado.nombre,
+            usuario: (req.session && req.session.logueado && req.session.logueado.nombre) ? req.session.logueado.nombre : 'Sistema',
             accion: `ELIMINO UN PRODUCTO: ${nombre}`,
             modulo: "PRODUCTOS"
         });

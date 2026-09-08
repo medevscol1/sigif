@@ -1,8 +1,8 @@
-const Usuario = require('../models/usuario.model'); // Importa el modelo de Usuario para operaciones en la base de datos
+const Usuario = require('../modelos/usuario.model'); // Importa el modelo de Usuario para operaciones en la base de datos
 
 // exports.home: muestra la página principal del sistema SIGIF
 exports.home = async (req, res) => {
-  res.render('pages/index');
+  res.render('dashboard_index');
 };
 
 // exports.find: lista todos los usuarios y devuelve el resultado en HTML o JSON según el tipo de petición
@@ -10,7 +10,7 @@ exports.find = async (req, res) => {
   try {
     const usuarios = await Usuario.find(); // Busca todos los usuarios en MongoDB
     if (req.accepts && req.accepts('html')) {
-      return res.render('pages/listadousuarios', { usuarios }); // Renderiza la página de listado si se solicita HTML
+      return res.render('usuarios/usuarios', { usuarios, request: req });
     }
     return res.json(usuarios); // Devuelve la lista como JSON para peticiones API
   } catch (error) {
@@ -25,6 +25,10 @@ exports.findOne = async (req, res) => {
     if (!usuario) {
       return res.status(404).json({ error: 'Usuario no encontrado' }); // Devuelve 404 si el usuario no existe
     }
+    // Render edit page if HTML requested
+    if (req.accepts && req.accepts('html')) {
+      return res.render('usuarios/editar_usuarios', { usuario, request: req });
+    }
     res.status(200).json(usuario); // Devuelve el usuario encontrado
   } catch (error) {
     res.status(500).json({ error: error.message }); // Devuelve error 500 si ocurre un fallo
@@ -34,9 +38,17 @@ exports.findOne = async (req, res) => {
 // exports.insertOne: crea y guarda un nuevo usuario con los datos enviados en el cuerpo de la petición
 exports.insertOne = async (req, res) => {
   try {
-    const nuevoUsuario = new Usuario(req.body); // Crea un nuevo documento de Usuario con los datos del cuerpo
-    await nuevoUsuario.save(); // Guarda el usuario en MongoDB
-    res.status(201).json(nuevoUsuario); // Devuelve el usuario creado con estado 201
+    const nuevoUsuario = new Usuario({
+      nombre: req.body.nombre,
+      contra: req.body.contra,
+      telefono: req.body.telefono,
+      activo: req.body.activo === 'on' || req.body.activo === true,
+      cargo: req.body.cargo || 'Empleado'
+    });
+    await nuevoUsuario.save();
+    // if HTML form submit, redirect
+    if (req.accepts && req.accepts('html')) return res.redirect('/usuarios');
+    res.status(201).json(nuevoUsuario);
   } catch (error) {
     res.status(400).json({ error: error.message }); // Devuelve error 400 si los datos son inválidos
   }
@@ -46,15 +58,14 @@ exports.insertOne = async (req, res) => {
 exports.findOneAndUpdate = async (req, res) => {
   try {
     const { id, nombre, contra, telefono, cargo, activo } = req.body; // Lee los datos del formulario
-
     await Usuario.findByIdAndUpdate(id, {
-        nombre,
-        contra,
-        telefono: telefono || null, // Usa null si no se envía teléfono
-        cargo,
-        activo
+      nombre,
+      contra,
+      telefono: telefono || null,
+      cargo,
+      activo: activo === 'on' || activo === true
     });
-    res.redirect('/listadousuarios'); // Redirige al listado de usuarios tras la actualización
+    res.redirect('/usuarios');
   } catch (error) {
     res.status(500).send("Error al actualizar usuario: " + error.message); // Devuelve error 500 si falla la actualización
   }
@@ -63,13 +74,10 @@ exports.findOneAndUpdate = async (req, res) => {
 // exports.findOneAndDelete: elimina un usuario por su ID recibido en el cuerpo y redirige al listado
 exports.findOneAndDelete = async (req, res) => {
   try {
-    const { id } = req.body; // Lee el ID del cuerpo
-
-    if (!id) {
-      return res.status(400).send("ID de usuario no proporcionado"); // Valida que se envíe el ID
-    }
-    await Usuario.findByIdAndDelete(id); // Elimina el usuario de la base de datos
-    res.redirect('/listadousuarios'); // Redirige al listado tras la eliminación
+    const { id } = req.body;
+    if (!id) return res.status(400).send('ID de usuario no proporcionado');
+    await Usuario.findByIdAndDelete(id);
+    res.redirect('/usuarios');
   } catch (error) {
     console.error("Error al eliminar usuario:", error); // Registra el error en consola
     res.status(500).send("Ocurrió un error al intentar eliminar el usuario"); // Devuelve error 500 si hay falla
@@ -78,5 +86,5 @@ exports.findOneAndDelete = async (req, res) => {
 
 // exports.formulario: muestra el formulario para registrar un nuevo usuario
 exports.formulario = async (req, res) => {
-  res.render('pages/registrarusuario');
+  res.render('usuarios/crear_usuarios');
 };

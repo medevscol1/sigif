@@ -38,9 +38,8 @@ const productoSchema = new mongoose.Schema({
 });
 
 // Actualiza automáticamente la fecha de modificación antes de guardar
-productoSchema.pre("save", function (next) {
+productoSchema.pre("save", function () {
     this.fecha_actualizacion = Date.now();
-    next();
 });
 
 module.exports = mongoose.model("Producto", productoSchema);

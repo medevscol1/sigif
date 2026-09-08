@@ -1,0 +1,39 @@
+<%- include('../partials/header') %>
+
+<section>
+  <h1>Editar Usuario</h1>
+  <% if (usuario) { %>
+  <form action="/usuarios/editar" method="post">
+    <input type="hidden" name="id" value="<%= usuario._id %>" />
+    <div class="mb-3">
+      <label class="form-label">Nombre</label>
+      <input name="nombre" class="form-control" value="<%= usuario.nombre %>" required />
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Contraseña</label>
+      <input name="contra" type="password" class="form-control" value="<%= usuario.contra %>" />
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Teléfono</label>
+      <input name="telefono" class="form-control" value="<%= usuario.telefono %>" />
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Cargo</label>
+      <select name="cargo" class="form-control">
+        <option <%= usuario.cargo === 'Empleado' ? 'selected' : '' %>>Empleado</option>
+        <option <%= usuario.cargo === 'Admin' ? 'selected' : '' %>>Admin</option>
+      </select>
+    </div>
+    <div class="mb-3 form-check">
+      <input type="checkbox" name="activo" class="form-check-input" id="activo" <%= usuario.activo ? 'checked' : '' %>>
+      <label class="form-check-label" for="activo">Activo</label>
+    </div>
+    <button class="btn btn-primary" type="submit">Guardar</button>
+    <a href="/usuarios" class="btn btn-secondary">Cancelar</a>
+  </form>
+  <% } else { %>
+    <p>Usuario no encontrado.</p>
+  <% } %>
+</section>
+
+<%- include('../partials/footer') %>

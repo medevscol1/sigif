@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/static/css/style1.css?v=9">
+    <link rel="stylesheet" href="/static/css/style1.css?v=10">
 </head>
 <body>
 
@@ -16,16 +16,24 @@
     <div class="logo">
       <img src="/static/img/logologin.png" alt="">
     </div>
-    <div class="user-Info" style="padding-bottom: 0;"></div>
+    <div class="user-Info" style="padding-bottom: 0;">
+      <!-- Usuario removido de aquí para colocarlo a la derecha -->
+    </div>
     <nav class="menu">
       <ul>
-        <li><a href="/dashboard">Dashboard</a></li>
-        <li><a href="/usuarios">Usuarios</a></li>
-        <li><a href="/productos">Productos</a></li>
-        <li><a href="/inventario">Inventario</a></li>
-        <li><a href="/facturacion">Facturación</a></li>
-        <li><a href="/auditoria">Auditoría</a></li>
-        <li><a href="/configuracion">Configuración</a></li>
+        <% 
+          const currentPath = (typeof request !== 'undefined' && request.path) ? request.path : '';
+          const isActive = (p) => currentPath === p || currentPath.startsWith(p + '/') || currentPath === p.replace(/\/$/, '') ? 'active' : '';
+          const isDashboard = currentPath === '/' || currentPath === '/inicio' || currentPath === '/inicio/' || currentPath === '/dashboard' || currentPath === '/dashboard/' ? 'active' : '';
+        %>
+        <li><a href="/inicio" class="menu-dashboard <%= isDashboard %>"><i class="bi bi-speedometer2" aria-hidden="true"></i>Dashboard</a></li>
+        <li><a href="/usuarios" class="menu-usuarios <%= isActive('/usuarios') || isActive('/crear_usuarios') || isActive('/editar_usuarios') %>"><i class="bi bi-people" aria-hidden="true"></i>Usuarios</a></li>
+        <li><a href="/productos" class="menu-productos <%= isActive('/productos') %>"><i class="bi bi-box-seam" aria-hidden="true"></i>Productos</a></li>
+        <li><a href="/inventario" class="menu-inventario <%= isActive('/inventario') %>"><i class="bi bi-boxes" aria-hidden="true"></i>Inventario</a></li>
+        <li><a href="/facturacion" class="menu-facturacion <%= isActive('/facturacion') || isActive('/facturas') %>"><i class="bi bi-receipt" aria-hidden="true"></i>Facturación</a></li>
+        <li><a href="/finanzas" class="menu-finanzas <%= isActive('/finanzas') %>"><i class="bi bi-cash-stack" aria-hidden="true"></i>Finanzas</a></li>
+        <li><a href="/auditoria" class="menu-auditoria <%= isActive('/auditoria') %>"><i class="bi bi-clipboard-check" aria-hidden="true"></i>Auditoría</a></li>
+        <li><a href="/configuracion" class="menu-configuracion <%= isActive('/configuracion') %>"><i class="bi bi-gear" aria-hidden="true"></i>Configuración</a></li>
       </ul>
     </nav>
     <div class="Cerrar-sesion">
@@ -35,7 +43,61 @@
 
   <div class="main-container">
     <div class="user-header-wrapper">
-      <div class="user-menu-container position-relative"></div>
+        <div class="user-menu-container position-relative">
+            <button class="user-profile-card" id="userMenuButton" type="button" onclick="toggleUserMenu()" aria-expanded="false">
+                <div class="user-avatar">
+                    <%= (typeof request !== 'undefined' && request.session && request.session.logueado && request.session.logueado.nombre) ? request.session.logueado.nombre.charAt(0).toUpperCase() : 'U' %>
+                </div>
+                <div class="user-info-container">
+                    <span class="user-name"><%= (typeof request !== 'undefined' && request.session && request.session.logueado && request.session.logueado.nombre) ? request.session.logueado.nombre : 'Usuario Activo' %></span>
+                    <span class="user-role">
+                        <%= (typeof request !== 'undefined' && request.session && request.session.logueado && request.session.logueado.rol) ? request.session.logueado.rol : 'Operador' %>
+                    </span>
+                </div>
+                <i class="bi bi-chevron-down user-chevron"></i>
+            </button>
+            <div class="user-dropdown-menu" id="userDropdownMenu">
+                <div class="user-dropdown-header">
+                    <p class="user-dropdown-name"><%= (typeof request !== 'undefined' && request.session && request.session.logueado && request.session.logueado.nombre) ? request.session.logueado.nombre : 'Usuario Activo' %></p>
+                    <span class="user-dropdown-badge"><%= (typeof request !== 'undefined' && request.session && request.session.logueado && request.session.logueado.rol) ? request.session.logueado.rol : 'Operador' %></span>
+                </div>
+                <div class="user-dropdown-divider"></div>
+                <% if (typeof request !== 'undefined' && request.session && request.session.logueado && request.session.logueado.id) { %>
+                <a href="/editar_usuarios/<%= request.session.logueado.id %>" class="user-dropdown-item">
+                    <i class="bi bi-person-gear"></i>
+                    <span>Editar perfil</span>
+                </a>
+                <% } else { %>
+                <a href="/usuarios" class="user-dropdown-item">
+                    <i class="bi bi-person-gear"></i>
+                    <span>Editar perfil</span>
+                </a>
+                <% } %>
+                <div class="user-dropdown-divider"></div>
+                <a href="/logout" class="user-dropdown-item logout" onclick="return confirm('¿Estás seguro de que quieres cerrar sesión?')">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Cerrar sesión</span>
+                </a>
+            </div>
+        </div>
     </div>
+
+    <% 
+      // Mensajes globales (estilizados con Bootstrap). Incluye tags extra
+      const globalMessages = (typeof messages !== 'undefined' && messages.length) ? messages : (typeof request !== 'undefined' && request.session && request.session.messages ? request.session.messages : []);
+    %>
+    <% if (globalMessages && globalMessages.length) { %>
+      <div class="messages-container">
+        <% globalMessages.forEach(function(message){ %>
+          <% const tags = message.tags || message.type || 'info'; %>
+          <% if (!tags.includes('module-finanzas')) { %>
+            <div class="alert <%= tags.includes('error') ? 'alert-danger' : tags.includes('success') ? 'alert-success' : tags.includes('warning') ? 'alert-warning' : 'alert-info' %> alert-dismissible fade show <%= tags %>" role="alert">
+              <%= message.text || message.message || message %>
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          <% } %>
+        <% }) %>
+      </div>
+    <% } %>
 
     <div class="content-area">

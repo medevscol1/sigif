@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/static/css/style1.css?v=9">
+    <link rel="stylesheet" href="/static/css/style1.css?v=10">
 </head>
 
 <body>
@@ -23,17 +23,23 @@
     </div>
     <nav class="menu">
       <ul>
-        <li><a href="#">Dashboard</a></li>
-        <li><a href="#">Usuarios</a></li>
-        <li><a href="#">Productos</a></li>
-        <li><a href="#">Inventario</a></li>
-        <li><a href="#">Facturación</a></li>
-        <li><a href="#">Auditoría</a></li>
-        <li><a href="#">Configuración</a></li>
+        <% 
+          const currentPath = (typeof request !== 'undefined' && request.path) ? request.path : '';
+          const isDashboard = currentPath === '/' || currentPath === '/inicio' || currentPath === '/inicio/' || currentPath === '/dashboard' || currentPath === '/dashboard/' ? 'active' : '';
+          const isActive = (p) => currentPath === p || currentPath.startsWith(p + '/') ? 'active' : '';
+        %>
+        <li><a href="/inicio" class="menu-dashboard <%= isDashboard %>"><i class="bi bi-speedometer2" aria-hidden="true"></i>Dashboard</a></li>
+        <li><a href="/usuarios" class="menu-usuarios <%= isActive('/usuarios') || isActive('/crear_usuarios') || isActive('/editar_usuarios') %>"><i class="bi bi-people" aria-hidden="true"></i>Usuarios</a></li>
+        <li><a href="/productos" class="menu-productos <%= isActive('/productos') %>"><i class="bi bi-box-seam" aria-hidden="true"></i>Productos</a></li>
+        <li><a href="/inventario" class="menu-inventario <%= isActive('/inventario') %>"><i class="bi bi-boxes" aria-hidden="true"></i>Inventario</a></li>
+        <li><a href="/facturacion" class="menu-facturacion <%= isActive('/facturacion') %>"><i class="bi bi-receipt" aria-hidden="true"></i>Facturación</a></li>
+        <li><a href="/finanzas" class="menu-finanzas <%= isActive('/finanzas') %>"><i class="bi bi-cash-stack" aria-hidden="true"></i>Finanzas</a></li>
+        <li><a href="/auditoria" class="menu-auditoria <%= isActive('/auditoria') %>"><i class="bi bi-clipboard-check" aria-hidden="true"></i>Auditoría</a></li>
+        <li><a href="/configuracion" class="menu-configuracion <%= isActive('/configuracion') %>"><i class="bi bi-gear" aria-hidden="true"></i>Configuración</a></li>
       </ul>
     </nav>
     <div class="Cerrar-sesion">
-<li> <a href="#" class="btn-logout" onclick="return confirm('¿Estás seguro de que quieres cerrar sesión?')">Cerrar sesión</a></li>
+      <li> <a href="/logout" class="btn-logout" onclick="return confirm('¿Estás seguro de que quieres cerrar sesión?')">Cerrar sesión</a></li>
     </div>
   </aside>
 
@@ -58,18 +64,39 @@
                     <span class="user-dropdown-badge"><%= (typeof request !== 'undefined' && request.session && request.session.logueado && request.session.logueado.rol) ? request.session.logueado.rol : 'Operador' %></span>
                 </div>
                 <div class="user-dropdown-divider"></div>
-                <a href="#" class="user-dropdown-item">
+                <% if (typeof request !== 'undefined' && request.session && request.session.logueado && request.session.logueado.id) { %>
+                <a href="/editar_usuarios/<%= request.session.logueado.id %>" class="user-dropdown-item">
                     <i class="bi bi-person-gear"></i>
                     <span>Editar perfil</span>
                 </a>
+                <% } else { %>
+                <a href="/usuarios" class="user-dropdown-item">
+                    <i class="bi bi-person-gear"></i>
+                    <span>Editar perfil</span>
+                </a>
+                <% } %>
                 <div class="user-dropdown-divider"></div>
-                <a href="#" class="user-dropdown-item logout" onclick="return confirm('¿Estás seguro de que quieres cerrar sesión?')">
+                <a href="/logout" class="user-dropdown-item logout" onclick="return confirm('¿Estás seguro de que quieres cerrar sesión?')">
                     <i class="bi bi-box-arrow-right"></i>
                     <span>Cerrar sesión</span>
                 </a>
             </div>
         </div>
     </div>
+    
+    <% 
+      const globalMessages = (typeof messages !== 'undefined' && messages.length) ? messages : (typeof request !== 'undefined' && request.session && request.session.messages ? request.session.messages : []);
+    %>
+    <% if (globalMessages && globalMessages.length) { %>
+      <div class="messages-container">
+        <% globalMessages.forEach(function(m){ const tags = m.tags || m.type || 'info'; %>
+          <div class="alert <%= tags.includes('error') ? 'alert-danger' : tags.includes('success') ? 'alert-success' : 'alert-info' %> alert-dismissible fade show" role="alert">
+            <%= m.text || m.message || m %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
 
     <%- body %>
   </div>

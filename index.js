@@ -1,38 +1,33 @@
-require("dotenv").config(); // Carga variables de entorno desde el archivo .env
+require("dotenv").config();
 
-const express = require("express"); // Importa Express para crear el servidor HTTP
-const conexion = require("./configuracion/connectiondb"); // Importa la conexión a MongoDB
+const express = require("express");
+const session = require("express-session");
+const conexion = require("./configuracion/connectiondb");
 const path = require('path');
 const Usuario = require('./modelos/usuario.model');
 const Producto = require('./modelos/producto.model');
 const Auditoria = require('./modelos/auditoria.model');
-const Venta = require('./modelos/venta.model');
 const Factura = require('./modelos/factura.model');
 const productoController = require('./controladores/producto.controller');
 const usuarioController = require('./controladores/usuario.controller');
+const dashboardController = require('./controladores/dashboard.controller');
 
-const app = express(); // Crea la instancia de la aplicación Express
+const app = express();
 
-app.use(express.json()); // Habilita el parseo de JSON en el cuerpo de las peticiones
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Views y motor de plantillas EJS
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
-// Valores por defecto para evitar ReferenceError en las plantillas
-app.use((req, res, next) => {
-    res.locals.request = req;
-    res.locals.total = 0;
-    res.locals.to = 0;
-    res.locals.low_stock = 0;
-    res.locals.out_of_stock = 0;
-    res.locals.ventas_totales = 0;
-    res.locals.actividades_recientes = [];
-    res.locals.messages = [];
-    res.locals.endpoints = [];
-    next();
-});
+// Sesión (fiel a Django request.session.logueado)
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'sigif-secret-dev',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: 1000 * 60 * 60 * 2 } // 2 horas
+}));
 
 // Helpers similares a filtros de Django
 app.locals.floatformat = (value, digits = 0) => {
@@ -41,16 +36,13 @@ app.locals.floatformat = (value, digits = 0) => {
     if (isNaN(num)) return value;
     return num.toFixed(digits);
 };
-
 app.locals.intcomma = (value) => {
     if (value == null) return '';
     return Number(value).toLocaleString('en-US');
 };
-
 app.locals.pluralize = (count, singular = '', plural = 's') => {
     return (Number(count) === 1) ? singular : plural;
 };
-
 app.locals.dateFormat = (date, locale = 'es-ES', options = {}) => {
     if (!date) return '';
     try {
@@ -60,46 +52,85 @@ app.locals.dateFormat = (date, locale = 'es-ES', options = {}) => {
     }
 };
 
+// Middleware para exponer request, messages, logueado a las plantillas (fiel a base.html)
+app.use((req, res, next) => {
+    // request para compatibilidad {{ request.session.logueado }}
+    res.locals.request = req;
+    req.session.logueado = req.session.logueado || null;
+    // mensajes flash simple (array)
+    if (!req.session.messages) req.session.messages = [];
+    res.locals.messages = req.session.messages;
+    // limpiar después de exponer? se limpia al leer en siguiente req; lo hacemos via helper
+    // Valores por defecto dashboard
+    res.locals.total = 0;
+    res.locals.to = 0;
+    res.locals.low_stock = 0;
+    res.locals.out_of_stock = 0;
+    res.locals.ventas_totales = 0;
+    res.locals.actividades_recientes = [];
+    res.locals.endpoints = [];
+    res.locals.q = '';
+    next();
+});
+
+// Helper para consumir mensajes (usado en controllers redirect)
+app.use((req, res, next) => {
+    const originalRedirect = res.redirect.bind(res);
+    res.redirect = function(...args) {
+        // mensajes persisten hasta render, no limpiar aquí
+        return originalRedirect(...args);
+    };
+    next();
+});
+
 // Servir archivos estáticos desde /static
+// Intenta servir desde /static de Node y fallback a sigif-final/static
 app.use('/static', express.static(path.join(__dirname, 'static')));
+app.use('/static', express.static(path.join(__dirname, 'sigif-final', 'static')));
 
-// Ruta raíz: responde con un mensaje indicando que el servidor está activo
+// ============ RUTAS USUARIOS (fieles a Django apps/usuarios/urls.py) ============
+// Login en raiz
 app.get("/", (req, res) => {
-    // Mostrar la página de login como índice
-    try {
-        res.render('usuarios/login', { request: req });
-    } catch (err) {
-        res.send("Servidor SIGIF funcionando");
-    }
+    if (req.session.logueado) return res.redirect('/inicio');
+    return res.render('usuarios/login', { request: req, messages: req.session.messages || [] });
 });
-
-// Rutas para navegar entre vistas convertidas
-app.get('/dashboard', async (req, res) => {
-    try {
-        const total = await Usuario.countDocuments();
-        const to = await Producto.countDocuments();
-        const low_stock = await Producto.countDocuments({ stock: { $gt: 0, $lt: 5 } });
-        const out_of_stock = await Producto.countDocuments({ stock: { $lte: 0 } });
-        const ventas = await Venta.find().sort({ fecha: -1 }).limit(10).lean();
-        const ventas_totales = await Venta.aggregate([
-            { $group: { _id: null, total: { $sum: '$total' } } }
-        ]).then(r => (r[0] ? r[0].total : 0));
-        const actividades_recientes = await Auditoria.find().sort({ fecha: -1 }).limit(10).lean();
-
-        return res.render('dashboard_index', {
-            total,
-            to,
-            low_stock,
-            out_of_stock,
-            ventas_totales,
-            actividades_recientes,
-            request: req
-        });
-    } catch (err) {
-        console.error('Error cargando dashboard:', err);
-        return res.render('dashboard_index', { request: req });
-    }
+app.get("/login", (req, res) => {
+    if (req.session.logueado) return res.redirect('/inicio');
+    return res.render('usuarios/login', { request: req, messages: req.session.messages || [] });
 });
+app.post("/", usuarioController.login_view);
+app.post("/login", usuarioController.login_view);
+app.get("/logout", usuarioController.logout_view);
+app.get("/logout/", usuarioController.logout_view);
+
+// Usuarios CRUD
+app.get("/usuarios", usuarioController.usuarios);
+app.get("/usuarios/", usuarioController.usuarios);
+// compat Node old /usuarios/crear vs Django /crear_usuarios/
+app.get("/crear_usuarios", usuarioController.vistaCrear);
+app.get("/crear_usuarios/", usuarioController.vistaCrear);
+app.get("/usuarios/crear", usuarioController.vistaCrear);
+app.post("/crear_usuarios", usuarioController.crear_usuarios);
+app.post("/crear_usuarios/", usuarioController.crear_usuarios);
+app.post("/usuarios/crear", usuarioController.crear_usuarios);
+
+app.get("/editar_usuarios/:id", usuarioController.editar_usuarios);
+app.get("/editar_usuarios/:id/", usuarioController.editar_usuarios);
+app.get("/usuarios/editar/:id", usuarioController.editar_usuarios);
+app.post("/editar_usuarios/:id", usuarioController.editar_usuarios);
+app.post("/editar_usuarios/:id/", usuarioController.editar_usuarios);
+app.post("/usuarios/editar", usuarioController.editar_usuarios_post); // legacy form
+
+app.post("/cambiar_estado_usuario/:id", usuarioController.cambiar_estado_usuario);
+app.post("/cambiar_estado_usuario/:id/", usuarioController.cambiar_estado_usuario);
+
+// ============ DASHBOARD (fiel a apps/dashboard/views.py) ============
+app.get("/inicio", dashboardController.index);
+app.get("/inicio/", dashboardController.index);
+app.get("/dashboard", dashboardController.index);
+app.get("/dashboard/", dashboardController.index);
+
+// ============ OTRAS RUTAS (no modificar otros modulos, mantener compatibles) ============
 app.get('/api', (req, res) => res.render('api/index', { endpoints: [] }));
 app.get('/productos', async (req, res) => {
     try {
@@ -110,14 +141,11 @@ app.get('/productos', async (req, res) => {
         return res.render('productos/productos', { request: req });
     }
 });
-// Productos - formularios y acciones
 app.get('/productos/crear', productoController.vistaCrearProducto);
 app.post('/productos/crear', productoController.crearProducto);
 app.get('/productos/editar/:id', productoController.vistaActualizarProducto);
 app.post('/productos/editar/:id', productoController.actualizarProducto);
 app.post('/productos/eliminar/:id', productoController.eliminarProducto);
-app.get('/productos/crear', (req, res) => res.render('productos/crear_productos'));
-app.get('/productos/editar/:id', (req, res) => res.render('productos/actualizar_productos', { id: req.params.id }));
 app.get('/configuracion', (req, res) => res.render('configuracion/configuracion'));
 app.get('/configuracion/backup', (req, res) => res.render('configuracion/backupypermisos'));
 app.get('/inventario', async (req, res) => {
@@ -129,7 +157,6 @@ app.get('/inventario', async (req, res) => {
         return res.render('inventario/inventario', { productos: [], request: req });
     }
 });
-
 app.get('/inventario/control', async (req, res) => {
     try {
         const productos = await Producto.find().lean();
@@ -139,7 +166,6 @@ app.get('/inventario/control', async (req, res) => {
         return res.render('inventario/inv_control', { productos: [], request: req });
     }
 });
-
 app.get('/inventario/ingresos', (req, res) => res.render('inventario/inv_ingresos', { request: req }));
 app.get('/inventario/historial', (req, res) => res.render('inventario/inv_historial', { request: req }));
 app.get('/facturacion', (req, res) => res.render('facturacion/facturacion'));
@@ -165,39 +191,23 @@ app.get('/auditoria', async (req, res) => {
         return res.render('auditoria/ver_registros', { registros: [], request: req });
     }
 });
-app.get('/usuarios', async (req, res) => {
-    try {
-        const usuarios = await Usuario.find().lean();
-        return res.render('usuarios/usuarios', { usuarios, request: req });
-    } catch (err) {
-        console.error('Error listando usuarios', err);
-        return res.render('usuarios/usuarios', { request: req });
-    }
-});
-// Usuarios - formularios y acciones
-app.get('/usuarios/crear', usuarioController.formulario);
-app.post('/usuarios/crear', usuarioController.insertOne);
-app.post('/usuarios/editar', usuarioController.findOneAndUpdate);
-app.post('/usuarios/eliminar', usuarioController.findOneAndDelete);
-app.get('/usuarios/crear', (req, res) => res.render('usuarios/crear_usuarios'));
-app.get('/usuarios/editar/:id', usuarioController.findOne);
-app.get('/login', (req, res) => res.render('usuarios/login'));
-app.post('/login', usuarioController.login);
-app.get('/logout', (req, res) => { /* implementar logout */ res.redirect('/login'); });
 
-// Definición segura del puerto (usa process.env.PORT si existe, o 1514 por defecto)
+// Handler 404 simple
+app.use((req, res) => {
+    res.status(404).send('404 - No encontrado: ' + req.originalUrl);
+});
+
 const PORT = process.env.PORT || 1514;
 
-// Maneja el resultado de la promesa de conexión a MongoDB
 conexion
     .then(() => {
-        console.log("Conexion exitosa a MongoDB"); // Se ejecuta cuando la conexión es exitosa
+        console.log("Conexion exitosa a MongoDB");
     })
     .catch((error) => {
-        console.log("Error conectando a MongoDB:"); // Se ejecuta cuando hay un error al conectar
+        console.log("Error conectando a MongoDB:");
         console.log(error);
     });
 
 app.listen(PORT, () => {
-    console.log(`Servidor conectado en http://localhost:${PORT}`); // Inicia el servidor correctamente
+    console.log(`Servidor conectado en http://localhost:${PORT}`);
 });

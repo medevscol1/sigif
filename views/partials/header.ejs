@@ -14,8 +14,9 @@
 
   <aside class="sidebar">
     <div class="logo">
-      <img src="/static/img/logologin.png" alt="">
+      <img src="/static/img/logologin.png" alt="SIGIF">
     </div>
+
     <div class="user-Info" style="padding-bottom: 0;">
       <!-- Usuario removido de aquí para colocarlo a la derecha -->
     </div>
@@ -34,6 +35,20 @@
         <li><a href="/finanzas" class="menu-finanzas <%= isActive('/finanzas') %>"><i class="bi bi-cash-stack" aria-hidden="true"></i>Finanzas</a></li>
         <li><a href="/auditoria" class="menu-auditoria <%= isActive('/auditoria') %>"><i class="bi bi-clipboard-check" aria-hidden="true"></i>Auditoría</a></li>
         <li><a href="/configuracion" class="menu-configuracion <%= isActive('/configuracion') %>"><i class="bi bi-gear" aria-hidden="true"></i>Configuración</a></li>
+
+    <div class="user-Info" style="padding-bottom: 0;"></div>
+    <% const currentPath = (typeof request !== 'undefined' && request.path) ? request.path : ''; %>
+    <nav class="menu">
+      <ul>
+        <li><a href="/dashboard" class="<%= currentPath === '/dashboard' ? 'active' : '' %>">Dashboard</a></li>
+        <li><a href="/usuarios" class="<%= currentPath.startsWith('/usuarios') ? 'active' : '' %>">Usuarios</a></li>
+        <li><a href="/productos" class="<%= currentPath.startsWith('/productos') ? 'active' : '' %>">Productos</a></li>
+        <li><a href="/inventario" class="<%= currentPath.startsWith('/inventario') ? 'active' : '' %>">Inventario</a></li>
+        <li><a href="/facturacion" class="<%= (currentPath.startsWith('/facturacion') || currentPath.startsWith('/facturas')) ? 'active' : '' %>">Facturación</a></li>
+        <li><a href="/finanzas" class="<%= currentPath.startsWith('/finanzas') ? 'active' : '' %>">Finanzas</a></li>
+        <li><a href="/auditoria" class="<%= currentPath.startsWith('/auditoria') ? 'active' : '' %>">Auditoria</a></li>
+        <li><a href="/configuracion" class="<%= currentPath.startsWith('/configuracion') ? 'active' : '' %>">Configuración</a></li>
+
       </ul>
     </nav>
     <div class="Cerrar-sesion">
@@ -43,6 +58,7 @@
 
   <div class="main-container">
     <div class="user-header-wrapper">
+
         <div class="user-menu-container position-relative">
             <button class="user-profile-card" id="userMenuButton" type="button" onclick="toggleUserMenu()" aria-expanded="false">
                 <div class="user-avatar">
@@ -80,6 +96,36 @@
                 </a>
             </div>
         </div>
+
+      <div class="user-menu-container position-relative">
+        <button class="user-profile-card" id="userMenuButton" type="button" onclick="toggleUserMenu()" aria-expanded="false">
+          <div class="user-avatar">
+            <%= (typeof request !== 'undefined' && request.session && request.session.logueado && request.session.logueado.nombre) ? request.session.logueado.nombre.charAt(0).toUpperCase() : 'M' %>
+          </div>
+          <div class="user-info-container">
+            <span class="user-name"><%= (typeof request !== 'undefined' && request.session && request.session.logueado && request.session.logueado.nombre) ? request.session.logueado.nombre : 'Medevs' %></span>
+            <span class="user-role"><%= (typeof request !== 'undefined' && request.session && request.session.logueado && request.session.logueado.rol) ? request.session.logueado.rol : 'SUPERADMIN' %></span>
+          </div>
+          <i class="bi bi-chevron-down user-chevron"></i>
+        </button>
+        <div class="user-dropdown-menu" id="userDropdownMenu">
+          <div class="user-dropdown-header">
+            <p class="user-dropdown-name"><%= (typeof request !== 'undefined' && request.session && request.session.logueado && request.session.logueado.nombre) ? request.session.logueado.nombre : 'Medevs' %></p>
+            <span class="user-dropdown-badge"><%= (typeof request !== 'undefined' && request.session && request.session.logueado && request.session.logueado.rol) ? request.session.logueado.rol : 'SUPERADMIN' %></span>
+          </div>
+          <div class="user-dropdown-divider"></div>
+          <a href="#" class="user-dropdown-item">
+            <i class="bi bi-person-gear"></i>
+            <span>Editar perfil</span>
+          </a>
+          <div class="user-dropdown-divider"></div>
+          <a href="/logout" class="user-dropdown-item logout" onclick="return confirm('¿Estás seguro de que quieres cerrar sesión?')">
+            <i class="bi bi-box-arrow-right"></i>
+            <span>Cerrar sesión</span>
+          </a>
+        </div>
+      </div>
+
     </div>
 
     <% 

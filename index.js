@@ -10,7 +10,11 @@ const Auditoria = require('./modelos/auditoria.model');
 const Factura = require('./modelos/factura.model');
 const productoController = require('./controladores/producto.controller');
 const usuarioController = require('./controladores/usuario.controller');
+<<<<<<< Updated upstream
 const dashboardController = require('./controladores/dashboard.controller');
+=======
+const facturacionController = require('./controladores/facturacion.controller');
+>>>>>>> Stashed changes
 
 const app = express();
 
@@ -168,20 +172,14 @@ app.get('/inventario/control', async (req, res) => {
 });
 app.get('/inventario/ingresos', (req, res) => res.render('inventario/inv_ingresos', { request: req }));
 app.get('/inventario/historial', (req, res) => res.render('inventario/inv_historial', { request: req }));
-app.get('/facturacion', (req, res) => res.render('facturacion/facturacion'));
-app.get('/facturacion/cliente', (req, res) => res.render('facturacion/cliente'));
-app.get('/facturacion/productos', async (req, res) => {
-    try {
-        const productos = await Producto.find().lean();
-        return res.render('facturacion/productos_facturacion', { productos, request: req });
-    } catch (err) {
-        console.error('Error cargando productos para facturación:', err);
-        return res.render('facturacion/productos_facturacion', { productos: [], request: req });
-    }
-});
-app.get('/facturacion/entradas', (req, res) => res.render('facturacion/registro_entradas'));
-app.get('/facturacion/pago', (req, res) => res.render('facturacion/pago'));
-app.get('/facturas', (req, res) => res.render('facturacion/facturas_entrada'));
+app.get('/facturacion', facturacionController.facturacion);
+app.get('/facturacion/pdf/:id', facturacionController.descargarPDF);
+app.post('/facturacion/crear', facturacionController.crearFactura);
+app.get('/facturacion/cliente', facturacionController.clientes);
+app.get('/facturacion/productos', facturacionController.productos);
+app.get('/facturacion/entradas', facturacionController.registroEntradas);
+app.get('/facturas', facturacionController.facturasEntrada);
+app.get('/facturacion/pago', (req, res) => res.render('facturacion/pago', { request: req }));
 app.get('/auditoria', async (req, res) => {
     try {
         const registros = await Auditoria.find().sort({ fecha: -1 }).lean();

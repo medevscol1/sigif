@@ -1,8 +1,23 @@
 <%- include('../partials/header') %>
 
-<section>
-  <h1>Pago</h1>
-  <p>Página de pago convertida a EJS.</p>
+<section class="facturacion-page pago-facturacion-page">
+  <header class="dashboard-header">
+    <h1>Gestión de facturación</h1>
+    <p>Registro y seguimiento de los pagos realizados</p>
+  </header>
+  <nav class="menu-horizontal facturacion-tabs" aria-label="Secciones de facturación">
+    <a href="/facturacion">Facturas de salidas</a>
+    <a href="/facturas">Facturas de entradas</a>
+    <a href="/facturacion/entradas">Registro de entradas</a>
+    <a href="/facturacion/cliente">Clientes</a>
+    <a href="/facturacion/productos">Productos</a>
+  </nav>
+  <div class="facturas-panel">
+    <div class="facturas-toolbar">
+      <div><h2>Pagos</h2><p>Gestión de pagos de la facturación</p></div>
+    </div>
+    <div class="facturas-empty"><i class="bi bi-credit-card"></i><strong>No hay pagos registrados</strong><span>Los pagos registrados aparecerán aquí.</span></div>
+  </div>
 </section>
 
 <%- include('../partials/footer') %>

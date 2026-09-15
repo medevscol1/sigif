@@ -1,332 +1,64 @@
 <%- include('../partials/header') %>
 
-<div class="billing-page-container">
 
-  <!-- Encabezado de la página -->
-  <div class="billing-page-header">
-    <h1 class="billing-title">Gestión de facturación</h1>
-  </div>
-
-  <!-- Barra de pestañas de navegación (Pills) -->
-  <div class="billing-tabs-nav">
-    <a href="/facturacion" class="tab-nav-item active">Facturas de salidas</a>
-    <a href="/facturas" class="tab-nav-item">Facturas de entradas</a>
-    <a href="/facturacion/entradas" class="tab-nav-item">Registro de entradas</a>
-    <a href="/facturacion/cliente" class="tab-nav-item">Clientes</a>
-    <a href="/facturacion/productos" class="tab-nav-item">Productos</a>
-  </div>
-
-  <!-- Contenedor Principal Blanco -->
-  <div class="billing-main-card">
-    
-    <!-- Barra superior de la tarjeta -->
-    <div class="billing-card-header">
-      <div class="header-left">
-        <h2 class="card-main-title">Facturas recientes</h2>
-        <p class="card-subtitle">Listado de todas las ventas generadas</p>
-      </div>
-
-      <div class="header-right">
-        <!-- Buscador por id -->
-        <div class="billing-search-box">
-          <i class="bi bi-search search-icon"></i>
-          <input type="text" id="billingSearchInput" placeholder="Buscar por id" autocomplete="off">
-        </div>
-
-        <!-- Contador de facturas -->
-        <div class="billing-count-badge">
-          <i class="bi bi-receipt"></i>
-          <span id="billingCounterText"><%= totalFacturas %> facturas</span>
-        </div>
-
-        <!-- Botón Nueva Factura -->
-        <button type="button" class="btn-create-invoice" data-bs-toggle="modal" data-bs-target="#modalNuevaFactura">
-          <i class="bi bi-plus-circle"></i>
-          <span>Nueva Factura</span>
-        </button>
+<section class="facturacion-page">
+  <header class="dashboard-header">
+    <h1>Gestión de facturación</h1>
+    <p>Consulta y descarga las facturas de ventas generadas</p>
+  </header>
+  <nav class="menu-horizontal facturacion-tabs" aria-label="Secciones de facturación">
+    <a class="active" href="/facturacion">Facturas de salidas</a>
+    <a href="/facturas">Facturas de entradas</a>
+    <a href="/facturacion/entradas">Registro de entradas</a>
+    <a href="/facturacion/cliente">Clientes</a>
+    <a href="/facturacion/productos">Productos</a>
+  </nav>
+  <% if (messages && messages.length) { %>
+    <% messages.forEach(function(message) { %><div class="alert alert-warning"><%= message %></div><% }) %>
+  <% } %>
+  <div class="facturas-panel">
+    <div class="facturas-toolbar">
+      <div><h2>Facturas recientes</h2><p>Listado de todas las ventas generadas</p></div>
+      <div class="facturas-actions">
+        <label class="facturas-search"><i class="bi bi-search" aria-hidden="true"></i><input id="buscarFactura" type="search" placeholder="Buscar por id" aria-label="Buscar factura por id"></label>
+        <span class="facturas-count"><i class="bi bi-receipt"></i> <%= facturas.length %> factura<%= facturas.length === 1 ? '' : 's' %></span>
       </div>
     </div>
-
-    <!-- Cuadrícula de Tarjetas de Facturas -->
-    <div class="facturas-grid" id="facturasContainer">
-      <% if (facturas && facturas.length > 0) { %>
+    <div id="facturasGrid" class="facturas-grid">
+      <% if (facturas.length) { %>
         <% facturas.forEach(function(factura) { %>
-          <% 
-            const fFecha = new Date(factura.fecha);
-            const fechaStr = !isNaN(fFecha) ? 
-              (fFecha.getDate().toString().padStart(2, '0') + '/' + 
-               (fFecha.getMonth() + 1).toString().padStart(2, '0') + '/' + 
-               fFecha.getFullYear() + ' ' + 
-               fFecha.getHours().toString().padStart(2, '0') + ':' + 
-               fFecha.getMinutes().toString().padStart(2, '0')) : '';
-            
-            const clienteNombre = (factura.cliente && factura.cliente.nombre) ? factura.cliente.nombre : 'Consumidor Final';
-            const clienteCorreo = (factura.cliente && factura.cliente.correo) ? factura.cliente.correo : 'consumidorfinal@pos.com';
-            const vendedorNombre = factura.vendedor || 'medevs';
-            const baseGravable = Number(factura.baseGravable || 0);
-            const ivaMonto = Number(factura.iva || 0);
-            const totalMonto = Number(factura.total || 0);
-            const prods = factura.productos || [];
-            const prodsText = prods.map(p => p.nombre).join(' ');
-          %>
-          <div class="invoice-card-item" 
-               data-id="<%= factura.numero %>" 
-               data-search="<%= factura.numero %> <%= clienteNombre.toLowerCase() %> <%= clienteCorreo.toLowerCase() %> <%= vendedorNombre.toLowerCase() %> <%= prodsText.toLowerCase() %>">
-            
-            <!-- Cabecera de la factura -->
-            <div class="card-item-header">
-              <div class="header-info-group">
-                <div class="invoice-icon-square">
-                  <i class="bi bi-receipt-cutoff"></i>
-                </div>
-                <div class="invoice-title-block">
-                  <h3 class="invoice-num-title">Factura #<%= factura.numero %></h3>
-                  <span class="invoice-date-text">
-                    <i class="bi bi-calendar3"></i> <%= fechaStr %>
-                  </span>
-                </div>
-              </div>
-              <div class="invoice-price-badge">
-                $ <%= totalMonto.toLocaleString('en-US') %>
-              </div>
+          <% const numero = factura.numero || factura.codigo || String(factura._id).slice(-6).toUpperCase(); const cliente = factura.cliente || {}; %>
+          <article class="factura-card" data-search="<%= (numero + ' ' + (cliente.nombre || '') + ' ' + (cliente.correo || '')).toLowerCase() %>">
+            <div class="factura-card-top"><div class="factura-icon"><i class="bi bi-receipt-cutoff"></i></div><div class="factura-heading"><strong>Factura #<%= numero %></strong><small><i class="bi bi-calendar3"></i> <%= dateFormat(factura.fecha, 'es-CO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %></small></div><span class="factura-total"><%= formatoPrecio(factura.total) %></span></div>
+            <a class="factura-pdf" href="/facturacion/factura/<%= factura._id %>" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf"></i> Descargar factura en PDF</a>
+            <div class="factura-meta">
+              <div><span><i class="bi bi-person"></i> Cliente</span><strong><%= cliente.nombre || 'Cliente no registrado' %></strong></div>
+              <div><span><i class="bi bi-envelope"></i> Correo</span><strong><%= cliente.correo || 'Sin correo' %></strong></div>
+              <div><span><i class="bi bi-person-badge"></i> Vendedor</span><strong><%= factura.vendedor || 'Sistema' %></strong></div>
+              <div><span><i class="bi bi-wallet2"></i> Base gravable</span><strong><%= formatoPrecio(factura.baseGravable || Number(factura.total || 0) / 1.19) %></strong></div>
+              <div><span><i class="bi bi-percent"></i> IVA (19%)</span><strong><%= formatoPrecio(factura.iva || Number(factura.total || 0) - Number(factura.baseGravable || Number(factura.total || 0) / 1.19)) %></strong></div>
             </div>
-
-            <!-- Botón Descargar PDF -->
-            <a href="/facturacion/pdf/<%= factura._id %>" target="_blank" class="btn-download-invoice-pdf">
-              Descargar Factura en PDF
-            </a>
-
-            <!-- Metadatos en 2 columnas -->
-            <div class="invoice-meta-grid">
-              <div class="meta-field">
-                <span class="field-label"><i class="bi bi-person"></i> CLIENTE</span>
-                <span class="field-value text-truncate" title="<%= clienteNombre %>"><%= clienteNombre %></span>
-              </div>
-              <div class="meta-field">
-                <span class="field-label"><i class="bi bi-envelope"></i> CORREO</span>
-                <span class="field-value text-truncate" title="<%= clienteCorreo %>"><%= clienteCorreo %></span>
-              </div>
-              <div class="meta-field">
-                <span class="field-label"><i class="bi bi-person-badge"></i> VENDEDOR</span>
-                <span class="field-value"><%= vendedorNombre %></span>
-              </div>
-              <div class="meta-field">
-                <span class="field-label"><i class="bi bi-cash-stack"></i> BASE GRAVABLE</span>
-                <span class="field-value">$<%= baseGravable.toLocaleString('en-US') %></span>
-              </div>
-              <div class="meta-field">
-                <span class="field-label">% IVA (<%= factura.ivaPorcentaje || 19 %>%)</span>
-                <span class="field-value">$<%= ivaMonto.toLocaleString('en-US') %></span>
-              </div>
-            </div>
-
-            <!-- Sección Productos Vendidos -->
-            <div class="invoice-products-section">
-              <div class="products-section-header">
-                <span>PRODUCTOS VENDIDOS</span>
-              </div>
-              <div class="products-items-box">
-                <% if (prods.length > 0) { %>
-                  <% prods.forEach(function(prod) { %>
-                    <div class="product-entry-row">
-                      <div class="prod-identity">
-                        <i class="bi bi-box-seam prod-icon-box"></i>
-                        <span class="prod-text-name" title="<%= prod.nombre %>"><%= prod.nombre %></span>
-                      </div>
-                      <div class="prod-pricing">
-                        <span class="prod-quantity-pill">x<%= prod.cantidad %></span>
-                        <span class="prod-item-total">$<%= Number(prod.subtotal || (prod.cantidad * prod.precio)).toLocaleString('en-US') %></span>
-                      </div>
-                    </div>
-                  <% }); %>
-                <% } else { %>
-                  <div class="product-entry-row">
-                    <div class="prod-identity">
-                      <i class="bi bi-box-seam prod-icon-box"></i>
-                      <span class="prod-text-name">Venta General</span>
-                    </div>
-                    <div class="prod-pricing">
-                      <span class="prod-quantity-pill">x1</span>
-                      <span class="prod-item-total">$<%= totalMonto.toLocaleString('en-US') %></span>
-                    </div>
-                  </div>
-                <% } %>
-              </div>
-            </div>
-
-            <!-- Pie de tarjeta con total -->
-            <div class="invoice-card-bottom">
-              <span class="bottom-label">TOTAL DE LA FACTURA</span>
-              <span class="bottom-total-value">$<%= totalMonto.toLocaleString('en-US') %></span>
-            </div>
-
-          </div>
-        <% }); %>
+            <div class="factura-products"><span>Productos vendidos</span><div class="factura-product-line"><i class="bi bi-box"></i> Detalle de productos no registrado</div></div>
+            <div class="factura-card-bottom"><span>Total de la factura</span><strong><%= formatoPrecio(factura.total) %></strong></div>
+          </article>
+        <% }) %>
       <% } else { %>
-        <div class="no-facturas-message" style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #64748b;">
-          <i class="bi bi-receipt" style="font-size: 40px; color: #cbd5e1; margin-bottom: 10px; display: block;"></i>
-          <p>No se encontraron facturas registradas.</p>
-        </div>
+        <div class="facturas-empty"><i class="bi bi-receipt"></i><strong>No hay facturas todavía</strong><span>Las facturas generadas aparecerán aquí.</span><a href="/inventario">Crear una venta</a></div>
       <% } %>
     </div>
-
-    <!-- Mensaje si la búsqueda no encuentra nada -->
-    <div id="noResultsAlert" class="no-results-alert" style="display: none;">
-      <i class="bi bi-search" style="font-size: 32px; color: #94a3b8; display: block; margin-bottom: 8px;"></i>
-      <p>No se encontraron facturas que coincidan con la búsqueda.</p>
-    </div>
-
+    <p id="sinResultadosFacturas" class="facturas-no-results" hidden>No se encontraron facturas con ese criterio.</p>
   </div>
+</section>
 
-</div>
-
-<!-- Modal Nueva Factura -->
-<div class="modal fade" id="modalNuevaFactura" tabindex="-1" aria-labelledby="modalNuevaFacturaLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 20px 40px rgba(0,0,0,0.15);">
-      <div class="modal-header" style="border-bottom: 1px solid #f1f5f9; padding: 20px 24px;">
-        <h5 class="modal-title" id="modalNuevaFacturaLabel" style="font-weight: 700; color: #1e293b;">
-          <i class="bi bi-plus-circle text-success me-2"></i> Generar Nueva Factura
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <form action="/facturacion/crear" method="POST">
-        <div class="modal-body" style="padding: 24px;">
-          
-          <div class="mb-3">
-            <label class="form-label" style="font-weight: 600; font-size: 13px; color: #334155;">Nombre del Cliente</label>
-            <input type="text" name="clienteNombre" class="form-control" placeholder="Ej: Daniel Moya" required>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label" style="font-weight: 600; font-size: 13px; color: #334155;">Correo Electrónico</label>
-            <input type="email" name="clienteCorreo" class="form-control" placeholder="cliente@correo.com" required>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label" style="font-weight: 600; font-size: 13px; color: #334155;">Producto Vendido</label>
-            <% if (productos && productos.length > 0) { %>
-              <div class="input-group">
-                <input type="text" name="productoNombre" id="inputProdNombre" class="form-control" placeholder="Nombre o selecciona abajo" required>
-                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Productos</button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                  <% productos.forEach(function(prod) { %>
-                    <li>
-                      <a class="dropdown-item" href="#" onclick="seleccionarProducto('<%= prod.nombre %>', <%= Number(prod.precio) %>); return false;">
-                        <%= prod.nombre %> - $<%= Number(prod.precio).toLocaleString('en-US') %>
-                      </a>
-                    </li>
-                  <% }); %>
-                </ul>
-              </div>
-            <% } else { %>
-              <input type="text" name="productoNombre" id="inputProdNombre" class="form-control" placeholder="Ej: Llanta Delantera 130/70/17" required>
-            <% } %>
-          </div>
-
-          <div class="row">
-            <div class="col-6 mb-3">
-              <label class="form-label" style="font-weight: 600; font-size: 13px; color: #334155;">Cantidad</label>
-              <input type="number" name="cantidad" id="inputCantidad" class="form-control" value="1" min="1" required oninput="calcularTotalModal()">
-            </div>
-            <div class="col-6 mb-3">
-              <label class="form-label" style="font-weight: 600; font-size: 13px; color: #334155;">Precio Unitario ($)</label>
-              <input type="number" name="precioUnitario" id="inputPrecio" class="form-control" placeholder="100000" min="0" step="100" required oninput="calcularTotalModal()">
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label" style="font-weight: 600; font-size: 13px; color: #334155;">Vendedor Asignado</label>
-            <input type="text" name="vendedor" class="form-control" value="medevs" required>
-          </div>
-
-          <!-- Resumen de cálculo -->
-          <div style="background: #f8fafc; border-radius: 8px; padding: 14px; border: 1px solid #e2e8f0; margin-top: 10px;">
-            <div class="d-flex justify-content-between mb-1" style="font-size: 13px; color: #64748b;">
-              <span>Base Gravable:</span>
-              <strong id="modalBaseGravable">$0</strong>
-            </div>
-            <div class="d-flex justify-content-between mb-1" style="font-size: 13px; color: #64748b;">
-              <span>IVA (19%):</span>
-              <strong id="modalIva">$0</strong>
-            </div>
-            <div class="d-flex justify-content-between pt-2 border-top" style="font-size: 15px; font-weight: 700; color: #15803d;">
-              <span>Total Estimado:</span>
-              <span id="modalTotal">$0</span>
-            </div>
-          </div>
-
-        </div>
-        <div class="modal-footer" style="border-top: 1px solid #f1f5f9; padding: 16px 24px;">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 8px; font-size: 13px;">Cancelar</button>
-          <button type="submit" class="btn btn-success" style="border-radius: 8px; font-size: 13px; font-weight: 600; background-color: #15803d; border: none; padding: 8px 18px;">
-            Crear Factura
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- Script interactivo de filtrado en vivo y cálculo del modal -->
 <script>
-  // Búsqueda instantánea en tiempo real por id, cliente, correo, vendedor o producto
-  const searchInput = document.getElementById('billingSearchInput');
-  const facturasItems = document.querySelectorAll('.invoice-card-item');
-  const counterText = document.getElementById('billingCounterText');
-  const noResultsAlert = document.getElementById('noResultsAlert');
-
-  if (searchInput) {
-    searchInput.addEventListener('input', function() {
-      const query = this.value.trim().toLowerCase();
-      let visibleCount = 0;
-
-      facturasItems.forEach(item => {
-        const searchData = item.getAttribute('data-search') || '';
-        const idData = item.getAttribute('data-id') || '';
-        
-        // Coincide por id numérico directo o texto general
-        const matches = !query || searchData.includes(query) || idData === query || ('#' + idData) === query;
-
-        if (matches) {
-          item.style.display = '';
-          visibleCount++;
-        } else {
-          item.style.display = 'none';
-        }
-      });
-
-      if (counterText) {
-        counterText.innerText = visibleCount + ' ' + (visibleCount === 1 ? 'factura' : 'facturas');
-      }
-
-      if (noResultsAlert) {
-        noResultsAlert.style.display = (visibleCount === 0 && facturasItems.length > 0) ? 'block' : 'none';
-      }
-    });
-  }
-
-  // Selección de producto en modal
-  function seleccionarProducto(nombre, precio) {
-    const inputNombre = document.getElementById('inputProdNombre');
-    const inputPrecio = document.getElementById('inputPrecio');
-    if (inputNombre) inputNombre.value = nombre;
-    if (inputPrecio) inputPrecio.value = precio;
-    calcularTotalModal();
-  }
-
-  // Cálculo en vivo dentro del modal
-  function calcularTotalModal() {
-    const cant = Number(document.getElementById('inputCantidad').value) || 0;
-    const precio = Number(document.getElementById('inputPrecio').value) || 0;
-    const total = cant * precio;
-    const base = Math.round(total / 1.19);
-    const iva = total - base;
-
-    document.getElementById('modalBaseGravable').innerText = '$' + base.toLocaleString('en-US');
-    document.getElementById('modalIva').innerText = '$' + iva.toLocaleString('en-US');
-    document.getElementById('modalTotal').innerText = '$' + total.toLocaleString('en-US');
-  }
+  const searchInput = document.getElementById('buscarFactura');
+  const facturaCards = Array.from(document.querySelectorAll('.factura-card'));
+  const noResults = document.getElementById('sinResultadosFacturas');
+  if (searchInput) searchInput.addEventListener('input', function () {
+    const term = this.value.trim().toLowerCase(); let visible = 0;
+    facturaCards.forEach(function (card) { const matches = card.dataset.search.includes(term); card.hidden = !matches; if (matches) visible += 1; });
+    if (noResults) noResults.hidden = visible !== 0 || facturaCards.length === 0;
+  });
 </script>
 
 <%- include('../partials/footer') %>

@@ -7,15 +7,6 @@
 
 <div class="alerts-container">
 
-    <% if (typeof messages !== 'undefined' && messages.length) { %>
-        <% messages.forEach(function(message){ %>
-            <% const tags = message.tags || message.type || 'info'; %>
-            <div class="alert alert-<%= tags.includes('error') ? 'danger' : tags.includes('success') ? 'success' : tags.includes('warning') ? 'warning' : 'info' %>">
-                <%= message.text || message.message || message %>
-            </div>
-        <% }) %>
-    <% } %>
-
     <% if (typeof low_stock !== 'undefined' && low_stock > 0) { %>
         <div class="alert warning">
             Hay <%= low_stock %> producto<%= low_stock !== 1 ? 's' : '' %> con stock bajo.

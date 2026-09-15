@@ -1,73 +1,30 @@
 <%- include('../partials/header') %>
 
-<div class="billing-page-container">
 
-  <div class="billing-page-header">
-    <h1 class="billing-title">Gestión de facturación</h1>
-  </div>
-
-  <div class="billing-tabs-nav">
-    <a href="/facturacion" class="tab-nav-item">Facturas de salidas</a>
-    <a href="/facturas" class="tab-nav-item active">Facturas de entradas</a>
-    <a href="/facturacion/entradas" class="tab-nav-item">Registro de entradas</a>
-    <a href="/facturacion/cliente" class="tab-nav-item">Clientes</a>
-    <a href="/facturacion/productos" class="tab-nav-item">Productos</a>
-  </div>
-
-  <div class="billing-main-card">
-    <div class="billing-card-header">
-      <div class="header-left">
-        <h2 class="card-main-title">Facturas de entradas</h2>
-        <p class="card-subtitle">Listado de compras e ingresos de mercancía a proveedores</p>
-      </div>
-      <div class="header-right">
-        <a href="/facturacion/entradas" class="btn-create-invoice">
-          <i class="bi bi-plus-circle"></i>
-          <span>Registrar Entrada</span>
-        </a>
-      </div>
+<section class="facturacion-page entradas-page">
+  <header class="dashboard-header">
+    <h1>Gestión de facturación</h1>
+    <p>Facturas de entrada e ingresos de mercancía registrados</p>
+  </header>
+  <nav class="menu-horizontal facturacion-tabs" aria-label="Secciones de facturación">
+    <a href="/facturacion">Facturas de salidas</a><a class="active" href="/facturas">Facturas de entradas</a><a href="/facturacion/entradas">Registro de entradas</a><a href="/facturacion/cliente">Clientes</a><a href="/facturacion/productos">Productos</a>
+  </nav>
+  <div class="facturas-panel">
+    <div class="facturas-toolbar"><div><h2>Facturas de entrada</h2><p>Ingresos de mercancía registrados desde el control de stock</p></div><div class="facturas-actions"><label class="facturas-search"><i class="bi bi-search"></i><input id="buscarEntrada" type="search" placeholder="Buscar por id o proveedor" aria-label="Buscar factura de entrada"></label><span class="facturas-count"><i class="bi bi-clipboard2-check"></i> <%= entradas.length %> entradas</span></div></div>
+    <div class="entradas-cards-grid">
+      <% if (entradas.length) { %><% entradas.forEach(function(entrada) { const productos = entrada.productos || []; %>
+        <article class="entrada-card" data-search="<%= (entrada.numero + ' ' + entrada.proveedor).toLowerCase() %>">
+          <div class="entrada-card-top"><div class="entrada-icon"><i class="bi bi-clipboard2-plus"></i></div><div class="entrada-heading"><span>Factura de entrada</span><strong><%= entrada.numero %></strong><small><i class="bi bi-calendar3"></i> <%= dateFormat(entrada.fecha, 'es-CO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %></small></div><span class="factura-total"><%= formatoPrecio(entrada.total) %></span></div>
+          <div class="entrada-meta"><div><span><i class="bi bi-truck"></i> Proveedor</span><strong><%= entrada.proveedor %></strong></div><div><span><i class="bi bi-person-badge"></i> Registro</span><strong><%= entrada.registro || 'Sistema' %></strong></div></div>
+          <div class="entrada-products"><span>Productos ingresados</span><% productos.slice(0, 2).forEach(function(item) { %><div><i class="bi bi-box"></i><strong><%= item.producto ? item.producto.nombre : 'Producto eliminado' %></strong><em>x<%= item.cantidad %></em><b><%= formatoPrecio(Number(item.cantidad || 0) * Number(item.precio || 0)) %></b></div><% }) %></div>
+          <div class="entrada-card-bottom"><span>Total de la entrada</span><strong><%= formatoPrecio(entrada.total) %></strong></div><button class="entrada-pdf" type="button" onclick="window.print()"><i class="bi bi-download"></i> Descargar factura en PDF</button>
+        </article>
+      <% }) %><% } else { %><div class="facturas-empty"><i class="bi bi-clipboard2"></i><strong>No hay facturas de entrada</strong><span>Registra un ingreso de mercancía para verlo aquí.</span><a href="/facturacion/entradas">Registrar entrada</a></div><% } %>
     </div>
-
-    <% if (typeof facturas !== 'undefined' && facturas.length > 0) { %>
-      <div class="table-responsive">
-        <table class="table table-hover align-middle">
-          <thead class="table-light">
-            <tr>
-              <th># Factura</th>
-              <th>Fecha</th>
-              <th>Proveedor</th>
-              <th>Productos</th>
-              <th>Total</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% facturas.forEach(function(f) { %>
-              <tr>
-                <td><strong>#<%= f.numero %></strong></td>
-                <td><%= new Date(f.fecha).toLocaleDateString() %></td>
-                <td><%= (f.cliente && f.cliente.nombre) ? f.cliente.nombre : 'Proveedor' %></td>
-                <td><%= f.productos ? f.productos.length : 0 %> productos</td>
-                <td><strong class="text-success">$<%= Number(f.total).toLocaleString('en-US') %></strong></td>
-                <td>
-                  <a href="/facturacion/pdf/<%= f._id %>" target="_blank" class="btn btn-sm btn-outline-success">
-                    <i class="bi bi-file-pdf"></i> Ver
-                  </a>
-                </td>
-              </tr>
-            <% }); %>
-          </tbody>
-        </table>
-      </div>
-    <% } else { %>
-      <div class="text-center py-5 text-muted">
-        <i class="bi bi-inbox" style="font-size: 40px; color: #cbd5e1; display: block; margin-bottom: 10px;"></i>
-        <p>No hay facturas de entrada registradas actualmente.</p>
-        <a href="/facturacion/entradas" class="btn btn-sm btn-outline-primary mt-2">Registrar primera entrada</a>
-      </div>
-    <% } %>
+    <p id="sinResultadosEntradas" class="facturas-no-results" hidden>No se encontraron entradas con ese criterio.</p>
   </div>
+</section>
 
-</div>
+<script>const buscarEntrada=document.getElementById('buscarEntrada');const tarjetasEntrada=Array.from(document.querySelectorAll('.entrada-card'));const sinResultadosEntrada=document.getElementById('sinResultadosEntradas');if(buscarEntrada)buscarEntrada.addEventListener('input',function(){const q=this.value.trim().toLowerCase();let n=0;tarjetasEntrada.forEach(c=>{const ok=c.dataset.search.includes(q);c.hidden=!ok;if(ok)n++;});if(sinResultadosEntrada)sinResultadosEntrada.hidden=n!==0||tarjetasEntrada.length===0;});</script>
 
 <%- include('../partials/footer') %>

@@ -24,12 +24,13 @@ exports.vistaCrearProducto = (req, res) => {
 // Crear producto
 exports.crearProducto = async (req, res) => {
     try {
+        const precio = Number(req.body.precio || 0);
 
         const producto = new Producto({
             nombre: req.body.nombre,
             descripcion: req.body.descripcion,
-            precio: req.body.precio,
-            stock: req.body.stock,
+            precio,
+            stock: Number(req.body.stock || 0),
             categoria: req.body.categoria,
             activo: req.body.activo === "on" || req.body.activo === true
         });
@@ -82,8 +83,8 @@ exports.actualizarProducto = async (req, res) => {
 
         producto.nombre = req.body.nombre;
         producto.descripcion = req.body.descripcion;
-        producto.precio = req.body.precio;
-        producto.stock = req.body.stock;
+        producto.precio = Number(req.body.precio || 0);
+        producto.stock = Number(req.body.stock || 0);
         producto.categoria = req.body.categoria;
         producto.activo = req.body.activo === "on" || req.body.activo === true;
         producto.fecha_actualizacion = Date.now();
@@ -101,6 +102,32 @@ exports.actualizarProducto = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).send("Error al actualizar el producto.");
+    }
+};
+
+// Alternar estado activo/inactivo
+exports.toggleProducto = async (req, res) => {
+    try {
+        const producto = await Producto.findById(req.params.id);
+
+        if (!producto) {
+            return res.status(404).send("Producto no encontrado.");
+        }
+
+        producto.activo = !producto.activo;
+        producto.fecha_actualizacion = Date.now();
+        await producto.save();
+
+        await Auditoria.create({
+            usuario: (req.session && req.session.logueado && req.session.logueado.nombre) ? req.session.logueado.nombre : 'Sistema',
+            accion: `${producto.activo ? 'ACTIVO' : 'DESACTIVO'} UN PRODUCTO: ${producto.nombre}`,
+            modulo: "PRODUCTOS"
+        });
+
+        res.redirect("/productos");
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("Error al cambiar el estado del producto.");
     }
 };
 

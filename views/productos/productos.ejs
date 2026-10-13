@@ -1,42 +1,146 @@
 <%- include('../partials/header') %>
 
-<section>
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1>Productos</h1>
-    <a href="/productos/crear" class="btn btn-success">Agregar producto</a>
+<section class="productos-page">
+  <div class="productos-header">
+    <div>
+      <h1>Gestión de productos</h1>
+    </div>
+    <a href="/productos/crear" class="btn-nuevo">+ Nuevo producto</a>
   </div>
 
-  <% if (productos && productos.length) { %>
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>Categoría</th>
-          <th>Precio</th>
-          <th>Stock</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% productos.forEach(function(p){ %>
-          <tr>
-            <td><%= p.nombre %></td>
-            <td><%= p.categoria %></td>
-            <td><%= (p.precio && p.precio.toString) ? p.precio.toString() : p.precio %></td>
-            <td><%= p.stock %></td>
-            <td>
-              <a class="btn btn-sm btn-primary" href="/productos/editar/<%= p._id %>">Editar</a>
-              <form action="/productos/eliminar/<%= p._id %>" method="post" style="display:inline-block;" onsubmit="return confirm('Eliminar producto?');">
-                <button class="btn btn-sm btn-danger" type="submit">Eliminar</button>
+  <div class="productos-panel">
+    <div class="productos-toolbar">
+      <div class="productos-toolbar-copy">
+        <h2>Lista de productos</h2>
+        <p>Administra los productos registrados en el catálogo, precios, stock y categorías.</p>
+      </div>
+      <div class="productos-toolbar-controls">
+        <div class="search-box">
+          <i class="bi bi-search"></i>
+          <input id="buscadorProductos" type="text" placeholder="Buscar por nombre o categoría" />
+        </div>
+        <div class="filter-pills" aria-label="Filtros de productos">
+          <button type="button" class="filter-btn active" data-filter="todos">Todos</button>
+          <button type="button" class="filter-btn" data-filter="activos">Activos</button>
+          <button type="button" class="filter-btn" data-filter="inactivos">Inactivos</button>
+          <button type="button" class="filter-btn" data-filter="stock">Stock bajo</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="productos-metrics">
+      <div class="metric-card">
+        <span class="metric-value"><%= totalProductos || 0 %></span>
+        <span class="metric-label">Total productos</span>
+      </div>
+      <div class="metric-card success">
+        <span class="metric-value"><%= activos || 0 %></span>
+        <span class="metric-label">Activos</span>
+      </div>
+      <div class="metric-card danger">
+        <span class="metric-value"><%= inactivos || 0 %></span>
+        <span class="metric-label">Inactivos</span>
+      </div>
+      <div class="metric-card warning">
+        <span class="metric-value"><%= stockBajo || 0 %></span>
+        <span class="metric-label">Stock bajo</span>
+      </div>
+    </div>
+
+    <% if (productos && productos.length) { %>
+      <div class="productos-grid" id="productosGrid">
+        <% productos.forEach(function(p){
+          const stock = Number(p.stock || 0);
+          const activo = !!p.activo;
+          const precio = Number((p.precio && p.precio.toString) ? p.precio.toString() : (p.precio || 0));
+          const idCorto = String(p._id).slice(-4);
+        %>
+          <article class="producto-card <%= activo ? 'status-active' : 'status-inactive' %> <%= stock > 0 && stock < 5 ? 'stock-bajo' : '' %>"
+            data-id="<%= String(p._id) %>"
+            data-nombre="<%= (p.nombre || '').toLowerCase() %>"
+            data-categoria="<%= (p.categoria || '').toLowerCase() %>"
+            data-activo="<%= activo ? 'activo' : 'inactivo' %>"
+            data-stock="<%= stock %>">
+            <div class="producto-card-top">
+              <span class="producto-id">ID #<%= idCorto %></span>
+              <span class="status-badge <%= activo ? 'status-active-badge' : 'status-inactive-badge' %>"><%= activo ? 'ACTIVO' : 'INACTIVO' %></span>
+            </div>
+
+            <div class="producto-figure">
+              <i class="bi bi-box-seam"></i>
+            </div>
+
+            <h3><%= p.nombre %></h3>
+            <% if (p.categoria) { %>
+              <span class="producto-categoria"><%= p.categoria %></span>
+            <% } %>
+
+            <div class="producto-price-row">
+              <span class="producto-price"><%= formatoPrecio(precio) %></span>
+              <span class="producto-stock"><%= stock %> unidades</span>
+            </div>
+
+            <div class="producto-actions">
+              <a href="/productos/editar/<%= p._id %>" class="btn-secondary-light">Editar</a>
+              <form action="/productos/toggle/<%= p._id %>" method="post" class="inline-form">
+                <button type="submit" class="btn-toggle <%= activo ? 'danger' : 'success' %>"><%= activo ? 'Desactivar' : 'Activar' %></button>
               </form>
-            </td>
-          </tr>
+            </div>
+          </article>
         <% }) %>
-      </tbody>
-    </table>
-  <% } else { %>
-    <p>No hay productos aún.</p>
-  <% } %>
+      </div>
+      <div id="sinResultados" class="no-results" style="display:none;">No se encontraron productos con ese criterio.</div>
+    <% } else { %>
+      <div class="no-results">No hay productos registrados aún.</div>
+    <% } %>
+  </div>
 </section>
+
+<script>
+  const buscadorProductos = document.getElementById('buscadorProductos');
+  const filterButtons = document.querySelectorAll('.filter-btn');
+  const cards = document.querySelectorAll('.producto-card');
+  const noResults = document.getElementById('sinResultados');
+  let currentFilter = 'todos';
+
+  function aplicarFiltros() {
+    const texto = (buscadorProductos ? buscadorProductos.value : '').trim().toLowerCase();
+    let visibleCount = 0;
+
+    cards.forEach((card) => {
+      const nombre = (card.dataset.nombre || '').toLowerCase();
+      const categoria = (card.dataset.categoria || '').toLowerCase();
+      const estado = card.dataset.activo;
+      const stock = Number(card.dataset.stock || 0);
+      const coincideTexto = !texto || nombre.includes(texto) || categoria.includes(texto);
+      const coincideEstado = currentFilter === 'todos'
+        || (currentFilter === 'activos' && estado === 'activo')
+        || (currentFilter === 'inactivos' && estado === 'inactivo')
+        || (currentFilter === 'stock' && stock > 0 && stock < 5);
+
+      const visible = coincideTexto && coincideEstado;
+      card.style.display = visible ? '' : 'none';
+      if (visible) visibleCount += 1;
+    });
+
+    if (noResults) {
+      noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+  }
+
+  if (buscadorProductos) {
+    buscadorProductos.addEventListener('input', aplicarFiltros);
+  }
+
+  filterButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      filterButtons.forEach((btn) => btn.classList.toggle('active', btn === button));
+      currentFilter = button.dataset.filter || 'todos';
+      aplicarFiltros();
+    });
+  });
+
+  aplicarFiltros();
+</script>
 
 <%- include('../partials/footer') %>

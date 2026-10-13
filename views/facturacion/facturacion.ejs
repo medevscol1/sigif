@@ -1,8 +1,64 @@
 <%- include('../partials/header') %>
 
-<section>
-  <h1>Facturación</h1>
-  <p>Página principal de facturación convertida.</p>
+
+<section class="facturacion-page">
+  <header class="dashboard-header">
+    <h1>Gestión de facturación</h1>
+    <p>Consulta y descarga las facturas de ventas generadas</p>
+  </header>
+  <nav class="menu-horizontal facturacion-tabs" aria-label="Secciones de facturación">
+    <a class="active" href="/facturacion">Facturas de salidas</a>
+    <a href="/facturas">Facturas de entradas</a>
+    <a href="/facturacion/entradas">Registro de entradas</a>
+    <a href="/facturacion/cliente">Clientes</a>
+    <a href="/facturacion/productos">Productos</a>
+  </nav>
+  <% if (messages && messages.length) { %>
+    <% messages.forEach(function(message) { %><div class="alert alert-warning"><%= message %></div><% }) %>
+  <% } %>
+  <div class="facturas-panel">
+    <div class="facturas-toolbar">
+      <div><h2>Facturas recientes</h2><p>Listado de todas las ventas generadas</p></div>
+      <div class="facturas-actions">
+        <label class="facturas-search"><i class="bi bi-search" aria-hidden="true"></i><input id="buscarFactura" type="search" placeholder="Buscar por id" aria-label="Buscar factura por id"></label>
+        <span class="facturas-count"><i class="bi bi-receipt"></i> <%= facturas.length %> factura<%= facturas.length === 1 ? '' : 's' %></span>
+      </div>
+    </div>
+    <div id="facturasGrid" class="facturas-grid">
+      <% if (facturas.length) { %>
+        <% facturas.forEach(function(factura) { %>
+          <% const numero = factura.numero || factura.codigo || String(factura._id).slice(-6).toUpperCase(); const cliente = factura.cliente || {}; %>
+          <article class="factura-card" data-search="<%= (numero + ' ' + (cliente.nombre || '') + ' ' + (cliente.correo || '')).toLowerCase() %>">
+            <div class="factura-card-top"><div class="factura-icon"><i class="bi bi-receipt-cutoff"></i></div><div class="factura-heading"><strong>Factura #<%= numero %></strong><small><i class="bi bi-calendar3"></i> <%= dateFormat(factura.fecha, 'es-CO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %></small></div><span class="factura-total"><%= formatoPrecio(factura.total) %></span></div>
+            <a class="factura-pdf" href="/facturacion/factura/<%= factura._id %>" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf"></i> Descargar factura en PDF</a>
+            <div class="factura-meta">
+              <div><span><i class="bi bi-person"></i> Cliente</span><strong><%= cliente.nombre || 'Cliente no registrado' %></strong></div>
+              <div><span><i class="bi bi-envelope"></i> Correo</span><strong><%= cliente.correo || 'Sin correo' %></strong></div>
+              <div><span><i class="bi bi-person-badge"></i> Vendedor</span><strong><%= factura.vendedor || 'Sistema' %></strong></div>
+              <div><span><i class="bi bi-wallet2"></i> Base gravable</span><strong><%= formatoPrecio(factura.baseGravable || Number(factura.total || 0) / 1.19) %></strong></div>
+              <div><span><i class="bi bi-percent"></i> IVA (19%)</span><strong><%= formatoPrecio(factura.iva || Number(factura.total || 0) - Number(factura.baseGravable || Number(factura.total || 0) / 1.19)) %></strong></div>
+            </div>
+            <div class="factura-products"><span>Productos vendidos</span><div class="factura-product-line"><i class="bi bi-box"></i> Detalle de productos no registrado</div></div>
+            <div class="factura-card-bottom"><span>Total de la factura</span><strong><%= formatoPrecio(factura.total) %></strong></div>
+          </article>
+        <% }) %>
+      <% } else { %>
+        <div class="facturas-empty"><i class="bi bi-receipt"></i><strong>No hay facturas todavía</strong><span>Las facturas generadas aparecerán aquí.</span><a href="/inventario">Crear una venta</a></div>
+      <% } %>
+    </div>
+    <p id="sinResultadosFacturas" class="facturas-no-results" hidden>No se encontraron facturas con ese criterio.</p>
+  </div>
 </section>
+
+<script>
+  const searchInput = document.getElementById('buscarFactura');
+  const facturaCards = Array.from(document.querySelectorAll('.factura-card'));
+  const noResults = document.getElementById('sinResultadosFacturas');
+  if (searchInput) searchInput.addEventListener('input', function () {
+    const term = this.value.trim().toLowerCase(); let visible = 0;
+    facturaCards.forEach(function (card) { const matches = card.dataset.search.includes(term); card.hidden = !matches; if (matches) visible += 1; });
+    if (noResults) noResults.hidden = visible !== 0 || facturaCards.length === 0;
+  });
+</script>
 
 <%- include('../partials/footer') %>

@@ -1,6 +1,6 @@
 const Producto = require("../modelos/producto.model");
 const Auditoria = require("../modelos/auditoria.model");
-
+const logger = require('../services/logs')
 // Listar productos
 exports.productos = async (req, res) => {
     try {
@@ -24,7 +24,10 @@ exports.vistaCrearProducto = (req, res) => {
 // Crear producto
 exports.crearProducto = async (req, res) => {
     try {
-
+        const usuario = (req.session && req.session.logueado && req.session.logueado.nombre)
+            ? req.session.logueado.nombre
+            : 'Sistema';
+        const accion = "Crear producto";
         const producto = new Producto({
             nombre: req.body.nombre,
             descripcion: req.body.descripcion,
@@ -41,7 +44,7 @@ exports.crearProducto = async (req, res) => {
             accion: `CREO UN PRODUCTO: ${producto.nombre}`,
             modulo: "PRODUCTOS"
         });
-
+        logger.escribirArchivo(accion, usuario);
         res.redirect("/productos");
 
     } catch (error) {

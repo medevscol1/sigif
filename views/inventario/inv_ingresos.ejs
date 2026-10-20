@@ -1,8 +1,371 @@
 <%- include('../partials/header') %>
 
-<section>
-  <h1>Ingreso de Inventario</h1>
-  <p>Formulario de ingresos convertido a EJS.</p>
-</section>
+<header class="dashboard-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 pb-2 border-bottom">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 rounded-pill fw-semibold">
+                    <i class="bi bi-box-arrow-in-down me-1"></i>Ingresos al Inventario
+                </span>
+                <h2 class="h3 fw-bold text-dark mb-0">Registro de Entradas de Mercancía</h2>
+            </div>
+            <p class="text-muted small mb-0">Control de compras a proveedores y actualización de stock.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <button class="btn btn-primary btn-sm rounded-2 d-flex align-items-center gap-1 shadow-sm px-3 py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#modalNuevaEntrada">
+                <i class="bi bi-plus-circle-fill"></i> Registrar Entrada
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- Modal Nueva Entrada -->
+<div class="modal fade" id="modalNuevaEntrada" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <form class="modal-content border-0 shadow-lg rounded-3" id="formEntrada">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-box-arrow-in-down text-primary"></i> Nueva Entrada de Inventario
+                </h5>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold text-muted">Proveedor *</label>
+                        <input type="text" class="form-control rounded-2 shadow-none" name="proveedor" required maxlength="150">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold text-muted">Documento (Factura/Remisión)</label>
+                        <input type="text" class="form-control rounded-2 shadow-none" name="documento" maxlength="50">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold text-muted">Fecha</label>
+                        <input type="date" class="form-control rounded-2 shadow-none" name="fecha" value="<%= new Date().toISOString().split('T')[0] %>">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-muted">Observaciones</label>
+                    <textarea class="form-control rounded-2 shadow-none" name="observaciones" rows="2" placeholder="Notas adicionales..."></textarea>
+                </div>
+
+                <hr class="my-3">
+                <h6 class="fw-bold text-dark mb-3">Items de la Entrada</h6>
+
+                <div id="itemsContainer">
+                    <div class="item-row row g-2 mb-2 align-items-end" data-index="0">
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold text-muted">Producto *</label>
+                            <select class="form-select rounded-2 shadow-none producto-select" name="items[0][producto_id]" required>
+                                <option value="">Seleccionar producto existente</option>
+                                <% productos.forEach(function(p) { %>
+                                    <option value="<%= p._id %>" data-precio="<%= p.precio %>" data-precio-venta="<%= p.precio %>"><%= p.nombre %> (Stock: <%= p.stock %>)</option>
+                                <% }); %>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold text-muted">Categoría (Nuevo)</label>
+                            <input type="text" class="form-control rounded-2 shadow-none categoria-nueva" name="items[0][categoria]" placeholder="Categoría" list="categoriasList">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold text-muted">Precio Compra *</label>
+                            <input type="number" step="1" min="1" class="form-control rounded-2 shadow-none precio-compra" name="items[0][precio]" required placeholder="0">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold text-muted">Precio Venta *</label>
+                            <input type="number" step="1" min="1" class="form-control rounded-2 shadow-none precio-venta" name="items[0][precio_venta]" required placeholder="0">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold text-muted">Cantidad *</label>
+                            <input type="number" step="1" min="1" max="10000" class="form-control rounded-2 shadow-none cantidad" name="items[0][cantidad]" value="1" required>
+                        </div>
+                        <div class="col-md-1">
+                            <button type="button" class="btn btn-outline-danger btn-sm rounded-2 w-100 btn-eliminar-item" title="Eliminar"><i class="bi bi-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-2" id="btnAgregarItem">
+                    <i class="bi bi-plus-lg me-1"></i> Agregar otro producto
+                </button>
+
+                <datalist id="categoriasList">
+                    <% const categoriasUnicas = [...new Set(productos.map(p => p.categoria).filter(Boolean))]; %>
+                    <% categoriasUnicas.forEach(function(cat) { %>
+                        <option value="<%= cat %>">
+                    <% }); %>
+                    <option value="REPUESTOS">
+                    <option value="ACCESORIOS">
+                    <option value="LUBRICANTES">
+                    <option value="LLANTAS">
+                    <option value="FRENOS">
+                </datalist>
+
+                <div class="alert alert-info mt-3 small mb-0">
+                    <i class="bi bi-info-circle me-1"></i> Si el producto no existe en la lista, seleccione "Producto nuevo" (deje el select vacío) e ingrese nombre, categoría y precios.
+                </div>
+            </div>
+            <div class="modal-footer border-top bg-light">
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-2" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-sm btn-primary rounded-2 px-3 fw-medium">
+                    <i class="bi bi-save me-1"></i> Guardar Entrada
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-xl-4 col-md-6">
+        <div class="card pg-kpi-card shadow-sm h-100 p-3 bg-white rounded-3 border border-primary">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <span class="pg-kpi-label text-muted fw-semibold small text-uppercase">Total Entradas</span>
+                    <div class="pg-kpi-value text-primary fw-bold fs-4 mt-1"><%= entradas ? entradas.length : 0 %></div>
+                </div>
+                <div class="pg-kpi-icon bg-primary-subtle text-primary rounded-3 p-2">
+                    <i class="bi bi-box-arrow-in-down fs-5"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4 col-md-6">
+        <div class="card pg-kpi-card shadow-sm h-100 p-3 bg-white rounded-3 border border-success">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <span class="pg-kpi-label text-muted fw-semibold small text-uppercase">Productos Activos</span>
+                    <div class="pg-kpi-value text-success fw-bold fs-4 mt-1"><%= productos ? productos.length : 0 %></div>
+                </div>
+                <div class="pg-kpi-icon bg-success-subtle text-success rounded-3 p-2">
+                    <i class="bi bi-box-seam fs-5"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4 col-md-6">
+        <div class="card pg-kpi-card shadow-sm h-100 p-3 bg-white rounded-3 border border-info">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <span class="pg-kpi-label text-muted fw-semibold small text-uppercase">Valor Total Inventario</span>
+                    <div class="pg-kpi-value text-info fw-bold fs-4 mt-1">
+                        <% if (productos) { %>
+                            <%= formatoPrecio(productos.reduce((sum, p) => sum + (Number(p.precio) * Number(p.stock || 0)), 0)) %>
+                        <% } else { %>
+                            $0
+                        <% } %>
+                    </div>
+                </div>
+                <div class="pg-kpi-icon bg-info-subtle text-info rounded-3 p-2">
+                    <i class="bi bi-currency-dollar fs-5"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-3 p-4 bg-white">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+        <div>
+            <h3 class="h6 fw-bold text-dark mb-1">
+                <i class="bi bi-clock-history text-primary me-2"></i>Historial de Entradas
+            </h3>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3 text-uppercase text-muted small fw-semibold" style="width: 100px;">Fecha</th>
+                    <th class="text-uppercase text-muted small fw-semibold">N° Entrada</th>
+                    <th class="text-uppercase text-muted small fw-semibold">Proveedor</th>
+                    <th class="text-uppercase text-muted small fw-semibold">Documento</th>
+                    <th class="text-uppercase text-muted small fw-semibold">Registrado por</th>
+                    <th class="text-end text-uppercase text-muted small fw-semibold" style="width: 140px;">Total</th>
+                    <th class="text-center text-uppercase text-muted small fw-semibold" style="width: 100px;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (entradas && entradas.length > 0) { %>
+                    <% entradas.forEach(function(e) { %>
+                        <tr>
+                            <td class="ps-3 fw-medium text-dark small"><%= new Date(e.fecha).toLocaleDateString('es-CO') %></td>
+                            <td class="fw-semibold text-primary"><%= e.numeroFactura ? e.numeroFactura() : 'ENT-' + String(e.numero || e._id).padStart(6, '0') %></td>
+                            <td class="text-dark"><%= e.proveedor %></td>
+                            <td class="text-muted small"><%= e.documento || '—' %></td>
+                            <td class="text-muted small"><%= e.usuario || '—' %></td>
+                            <td class="text-end fw-bold text-success fs-6"><%= formatoPrecio(e.total) %></td>
+                            <td class="text-center pe-3">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="/inventario/entrada/pdf/<%= e._id %>" class="btn btn-outline-primary rounded-2" title="Ver PDF" target="_blank">
+                                        <i class="bi bi-file-earmark-pdf"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    <% }); %>
+                <% } else { %>
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-box-arrow-in-down fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                            <h6 class="fw-semibold text-dark">No hay entradas registradas</h6>
+                            <p class="small mb-0">Presione «Registrar Entrada» para agregar la primera.</p>
+                        </td>
+                    </tr>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+</div>
 
 <%- include('../partials/footer') %>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const container = document.getElementById('itemsContainer');
+    const btnAgregar = document.getElementById('btnAgregarItem');
+    let itemIndex = 1;
+
+    // Serializar productos para JS
+    const productosData = <%- JSON.stringify(productos.map(p => ({ id: p._id.toString(), nombre: p.nombre, stock: p.stock, precio: p.precio, precio_venta: p.precio, categoria: p.categoria }))) %>;
+
+    function actualizarIndices() {
+        const rows = container.querySelectorAll('.item-row');
+        rows.forEach((row, i) => {
+            row.dataset.index = i;
+            row.querySelectorAll('[name]').forEach(el => {
+                const name = el.getAttribute('name');
+                if (name) {
+                    el.setAttribute('name', name.replace(/items\[\d+\]/, 'items[' + i + ']'));
+                }
+            });
+        });
+        itemIndex = rows.length;
+    }
+
+    btnAgregar.addEventListener('click', function () {
+        const div = document.createElement('div');
+        div.className = 'item-row row g-2 mb-2 align-items-end';
+        div.dataset.index = itemIndex;
+        div.innerHTML = `
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-muted">Producto *</label>
+                <select class="form-select rounded-2 shadow-none producto-select" name="items[${itemIndex}][producto_id]">
+                    <option value="">Seleccionar producto existente</option>
+                    ${productosData.map(p => `<option value="${p.id}" data-precio="${p.precio}" data-precio-venta="${p.precio_venta}">${p.nombre} (Stock: ${p.stock})</option>`).join('')}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Categoría (Nuevo)</label>
+                <input type="text" class="form-control rounded-2 shadow-none categoria-nueva" name="items[${itemIndex}][categoria]" placeholder="Categoría" list="categoriasList">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Precio Compra *</label>
+                <input type="number" step="1" min="1" class="form-control rounded-2 shadow-none precio-compra" name="items[${itemIndex}][precio]" required placeholder="0">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Precio Venta *</label>
+                <input type="number" step="1" min="1" class="form-control rounded-2 shadow-none precio-venta" name="items[${itemIndex}][precio_venta]" required placeholder="0">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Cantidad *</label>
+                <input type="number" step="1" min="1" max="10000" class="form-control rounded-2 shadow-none cantidad" name="items[${itemIndex}][cantidad]" value="1" required>
+            </div>
+            <div class="col-md-1">
+                <button type="button" class="btn btn-outline-danger btn-sm rounded-2 w-100 btn-eliminar-item" title="Eliminar"><i class="bi bi-trash"></i></button>
+            </div>
+        `;
+        container.appendChild(div);
+        itemIndex++;
+        actualizarIndices();
+    });
+
+    container.addEventListener('click', function (e) {
+        if (e.target.closest('.btn-eliminar-item')) {
+            const row = e.target.closest('.item-row');
+            if (container.querySelectorAll('.item-row').length > 1) {
+                row.remove();
+                actualizarIndices();
+            } else {
+                alert('Debe haber al menos un item.');
+            }
+        }
+    });
+
+    container.addEventListener('change', function (e) {
+        if (e.target.matches('.producto-select')) {
+            const row = e.target.closest('.item-row');
+            const option = e.target.options[e.target.selectedIndex];
+            if (option.value) {
+                row.querySelector('.precio-compra').value = option.dataset.precio || '';
+                row.querySelector('.precio-venta').value = option.dataset.precioVenta || '';
+            }
+        }
+    });
+
+    // Submit form via fetch
+    document.getElementById('formEntrada').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        const data = {
+            proveedor: formData.get('proveedor'),
+            documento: formData.get('documento'),
+            observaciones: formData.get('observaciones'),
+            items: []
+        };
+
+        // Parse items
+        for (let i = 0; ; i++) {
+            const producto_id = formData.get(`items[${i}][producto_id]`);
+            const nombre = formData.get(`items[${i}][nombre]`);
+            const categoria = formData.get(`items[${i}][categoria]`);
+            const precio = formData.get(`items[${i}][precio]`);
+            const precio_venta = formData.get(`items[${i}][precio_venta]`);
+            const cantidad = formData.get(`items[${i}][cantidad]`);
+            const descripcion = formData.get(`items[${i}][descripcion]`);
+            const activo = formData.get(`items[${i}][activo]`);
+
+            if (!producto_id && !nombre) break;
+
+            data.items.push({
+                producto_id: producto_id || undefined,
+                nombre: nombre || '',
+                categoria: categoria || '',
+                precio: Number(precio) || 0,
+                precio_venta: Number(precio_venta) || 0,
+                cantidad: Number(cantidad) || 0,
+                descripcion: descripcion || '',
+                activo: activo === 'on'
+            });
+        }
+
+        try {
+            const resp = await fetch('/inventario/registrar-entrada', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await resp.json();
+            if (result.success) {
+                alert(result.message);
+                bootstrap.Modal.getInstance(document.getElementById('modalNuevaEntrada')).hide();
+                location.reload();
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } catch (err) {
+            alert('Error de conexión: ' + err.message);
+        }
+    });
+});
+</script>
+
+<style>
+.pg-kpi-card { transition: transform 0.2s ease, box-shadow 0.2s ease; border-color: #e2e8f0 !important; }
+.pg-kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06) !important; }
+.pg-kpi-label { letter-spacing: 0.03em; font-size: 0.72rem; }
+.pg-kpi-icon { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; }
+.item-row { animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+</style>

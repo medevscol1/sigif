@@ -1,0 +1,195 @@
+<%- include('../partials/header') %>
+
+<header class="dashboard-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 pb-2 border-bottom">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 rounded-pill fw-semibold">
+                    <i class="bi bi-bar-chart-fill me-1"></i>Ventas por Categoría
+                </span>
+                <h2 class="h3 fw-bold text-dark mb-0">Reporte de Ventas por Categoría</h2>
+            </div>
+            <p class="text-muted small mb-0">Identifica qué categoría genera más ingresos y rentabilidad.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <form method="get" class="d-flex align-items-center gap-2">
+                <input type="hidden" name="periodo" value="<%= periodo %>">
+                <select name="periodo" class="form-select form-select-sm shadow-none" onchange="this.form.submit()" style="max-width: 180px;">
+                    <option value="hoy" <%= periodo === 'hoy' ? 'selected' : '' %>>Hoy</option>
+                    <option value="semana" <%= periodo === 'semana' ? 'selected' : '' %>>Esta semana</option>
+                    <option value="mes" <%= periodo === 'mes' ? 'selected' : '' %>>Este mes</option>
+                    <option value="ano" <%= periodo === 'ano' ? 'selected' : '' %>>Este año</option>
+                </select>
+            </form>
+        </div>
+    </div>
+</header>
+
+<% if (categorias_resumen && categorias_resumen.length > 0) { %>
+<div class="row g-3 mb-4">
+    <div class="col-xl-4 col-md-6">
+        <div class="card pg-kpi-card shadow-sm h-100 p-3 bg-white rounded-3 border border-primary">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <span class="pg-kpi-label text-muted fw-semibold small text-uppercase">Categoría Líder (Ingresos)</span>
+                    <div class="pg-kpi-value text-primary fw-bold fs-5 mt-1"><%= categoria_lider ? categoria_lider.categoria : '—' %></div>
+                </div>
+                <div class="pg-kpi-icon bg-primary-subtle text-primary rounded-3 p-2">
+                    <i class="bi bi-trophy fs-5"></i>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 text-muted small pt-2 border-top">
+                <i class="bi bi-currency-dollar text-primary"></i>
+                <span><%= categoria_lider ? formatoPrecio(categoria_lider.ingresos) : '—' %></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-md-6">
+        <div class="card pg-kpi-card shadow-sm h-100 p-3 bg-white rounded-3 border border-success">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <span class="pg-kpi-label text-muted fw-semibold small text-uppercase">Categoría Más Rentable</span>
+                    <div class="pg-kpi-value text-success fw-bold fs-5 mt-1"><%= categoria_rentable ? categoria_rentable.categoria : '—' %></div>
+                </div>
+                <div class="pg-kpi-icon bg-success-subtle text-success rounded-3 p-2">
+                    <i class="bi bi-graph-up fs-5"></i>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 text-muted small pt-2 border-top">
+                <i class="bi bi-percent text-success"></i>
+                <span>Ganancia: <%= categoria_rentable ? formatoPrecio(categoria_rentable.ganancia) : '—' %></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-md-6">
+        <div class="card pg-kpi-card shadow-sm h-100 p-3 bg-white rounded-3 border border-info">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <span class="pg-kpi-label text-muted fw-semibold small text-uppercase">Total Unidades Vendidas</span>
+                    <div class="pg-kpi-value text-info fw-bold fs-4 mt-1"><%= total_unidades %></div>
+                </div>
+                <div class="pg-kpi-icon bg-info-subtle text-info rounded-3 p-2">
+                    <i class="bi bi-boxes fs-5"></i>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 text-muted small pt-2 border-top">
+                <i class="bi bi-tag text-info"></i>
+                <span>En <%= categorias_resumen.length %> categorías</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm rounded-3 p-4 h-100 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h3 class="h6 fw-bold text-dark mb-1">
+                        <i class="bi bi-bar-chart-fill text-primary me-2"></i>Ingresos por Categoría
+                    </h3>
+                </div>
+            </div>
+            <div class="chart-container position-relative" style="height: 320px;">
+                <canvas id="chartCatIngresos"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm rounded-3 p-4 h-100 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h3 class="h6 fw-bold text-dark mb-1">
+                        <i class="bi bi-pie-chart-fill text-success me-2"></i>Ganancia por Categoría
+                    </h3>
+                </div>
+            </div>
+            <div class="chart-container position-relative d-flex align-items-center justify-content-center" style="height: 320px;">
+                <canvas id="chartCatGanancia"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-3 p-4 bg-white">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+        <div>
+            <h3 class="h6 fw-bold text-dark mb-1">
+                <i class="bi bi-list-check text-primary me-2"></i>Detalle de Categorías
+            </h3>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3 text-uppercase text-muted small fw-semibold">Categoría</th>
+                    <th class="text-end text-uppercase text-muted small fw-semibold">Ingresos</th>
+                    <th class="text-end text-uppercase text-muted small fw-semibold">Costos</th>
+                    <th class="text-end text-uppercase text-muted small fw-semibold">Ganancia</th>
+                    <th class="text-end text-uppercase text-muted small fw-semibold">Margen %</th>
+                    <th class="text-end text-uppercase text-muted small fw-semibold">Unidades</th>
+                    <th class="text-end text-uppercase text-muted small fw-semibold">Transacciones</th>
+                    <th class="text-end text-uppercase text-muted small fw-semibold">SKUs</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% categorias_resumen.forEach(function(c) { %>
+                    <tr>
+                        <td class="ps-3 fw-medium text-dark small"><%= c.categoria %></td>
+                        <td class="text-end fw-semibold text-success"><%= formatoPrecio(c.ingresos) %></td>
+                        <td class="text-end fw-semibold text-danger"><%= formatoPrecio(c.costos) %></td>
+                        <td class="text-end fw-bold <%= c.ganancia >= 0 ? 'text-success' : 'text-danger' %>"><%= formatoPrecio(c.ganancia) %></td>
+                        <td class="text-end <%= c.margen >= 20 ? 'text-success' : (c.margen >= 0 ? 'text-warning' : 'text-danger') %> fw-bold"><%= c.margen.toFixed(1) %>%</td>
+                        <td class="text-end text-muted small"><%= c.unidades %></td>
+                        <td class="text-end text-muted small"><%= c.transacciones %></td>
+                        <td class="text-end text-muted small"><%= c.total_skus %></td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<% } else { %>
+    <div class="alert alert-info text-center py-5">
+        <i class="bi bi-bar-chart fs-1 d-block mb-2 text-secondary opacity-50"></i>
+        <h5 class="fw-semibold text-dark">No hay datos de ventas en este período</h5>
+    </div>
+<% } %>
+
+<%- include('../partials/footer') %>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    <% if (categorias_resumen && categorias_resumen.length > 0) { %>
+    const formatCOP = (val) => '$ ' + Math.round(Number(val) || 0).toLocaleString('es-CO');
+
+    const labels = [<%- categorias_resumen.map(c => "'" + c.categoria + "'").join(',') %>];
+    const ingresosData = [<%- categorias_resumen.map(c => c.ingresos).join(',') %>];
+    const gananciaData = [<%- categorias_resumen.map(c => c.ganancia).join(',') %>];
+
+    const ctxBar = document.getElementById('chartCatIngresos');
+    if (ctxBar) {
+        new Chart(ctxBar, {
+            type: 'bar',
+            data: { labels: labels, datasets: [{ label: 'Ingresos ($)', data: ingresosData, backgroundColor: 'rgba(59, 130, 246, 0.85)', borderColor: '#3b82f6', borderWidth: 1.5, borderRadius: 6, maxBarThickness: 35 }] },
+            options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, grid: { color: 'rgba(226, 232, 240, 0.65)' }, ticks: { callback: (v) => formatCOP(v) } }, y: { grid: { display: false } } } }
+        });
+    }
+
+    const ctxDoughnut = document.getElementById('chartCatGanancia');
+    if (ctxDoughnut) {
+        new Chart(ctxDoughnut, {
+            type: 'doughnut',
+            data: { labels: labels, datasets: [{ data: gananciaData, backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#ef4444', '#64748b'], borderWidth: 2, borderColor: '#ffffff' }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '66%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 10, font: { size: 11 } } } } }
+        });
+    }
+    <% } %>
+});
+</script>

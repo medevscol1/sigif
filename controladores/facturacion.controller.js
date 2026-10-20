@@ -1,6 +1,18 @@
 const Factura = require('../modelos/factura.model');
 const Cliente = require('../modelos/cliente.model');
 const Producto = require('../modelos/producto.model');
+const { EntradaInventario } = require('../modelos/entradaInventario.model');
+const Auditoria = require('../modelos/auditoria.model');
+const logger = require('../services/logs');
+
+function getUsuario(req) {
+    return (req.session && req.session.logueado && req.session.logueado.nombre) ? req.session.logueado.nombre : 'Sistema';
+}
+
+function formatoCop(valor) {
+    const num = Number(valor) || 0;
+    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(num);
+}
 
 // Datos iniciales para sembrar si la base de datos no tiene facturas
 const FACTURAS_SEMILLA = [
@@ -127,18 +139,6 @@ const FACTURAS_SEMILLA = [
     {
         numero: 48,
         fecha: new Date('2026-08-12T13:10:00'),
-        cliente: { nombre: 'Consumidor Final', correo: 'consumidorfinal@pos.com' },
-        vendedor: 'medevs',
-        baseGravable: 37815,
-        ivaPorcentaje: 19,
-        iva: 7185,
-        productos: [{ nombre: 'Bujía Iridium NGK', cantidad: 1, precio: 45000, subtotal: 45000 }],
-        total: 45000,
-        tipo: 'salida'
-    },
-    {
-        numero: 47,
-        fecha: new Date('2026-08-10T09:30:00'),
         cliente: { nombre: 'Distribuidora Motos del Valle', correo: 'ventas@distrimotos.com' },
         vendedor: 'carlos',
         baseGravable: 1176471,
@@ -149,7 +149,7 @@ const FACTURAS_SEMILLA = [
         tipo: 'salida'
     },
     {
-        numero: 46,
+        numero: 47,
         fecha: new Date('2026-08-08T18:20:00'),
         cliente: { nombre: 'Consumidor Final', correo: 'consumidorfinal@pos.com' },
         vendedor: 'medevs',
@@ -161,7 +161,7 @@ const FACTURAS_SEMILLA = [
         tipo: 'salida'
     },
     {
-        numero: 45,
+        numero: 46,
         fecha: new Date('2026-08-05T14:40:00'),
         cliente: { nombre: 'Daniel Moya', correo: 'dmoya1873@gmail.com' },
         vendedor: 'medevs',
@@ -173,7 +173,7 @@ const FACTURAS_SEMILLA = [
         tipo: 'salida'
     },
     {
-        numero: 44,
+        numero: 45,
         fecha: new Date('2026-08-03T11:15:00'),
         cliente: { nombre: 'Consumidor Final', correo: 'consumidorfinal@pos.com' },
         vendedor: 'carlos',
@@ -185,7 +185,7 @@ const FACTURAS_SEMILLA = [
         tipo: 'salida'
     },
     {
-        numero: 43,
+        numero: 44,
         fecha: new Date('2026-08-01T15:00:00'),
         cliente: { nombre: 'Moto Club Ruta 40', correo: 'contacto@ruta40.org' },
         vendedor: 'medevs',
@@ -197,7 +197,7 @@ const FACTURAS_SEMILLA = [
         tipo: 'salida'
     },
     {
-        numero: 42,
+        numero: 43,
         fecha: new Date('2026-07-28T16:30:00'),
         cliente: { nombre: 'Consumidor Final', correo: 'consumidorfinal@pos.com' },
         vendedor: 'carlos',
@@ -209,7 +209,7 @@ const FACTURAS_SEMILLA = [
         tipo: 'salida'
     },
     {
-        numero: 41,
+        numero: 42,
         fecha: new Date('2026-07-25T12:00:00'),
         cliente: { nombre: 'Consumidor Final', correo: 'consumidorfinal@pos.com' },
         vendedor: 'medevs',
@@ -221,7 +221,7 @@ const FACTURAS_SEMILLA = [
         tipo: 'salida'
     },
     {
-        numero: 40,
+        numero: 41,
         fecha: new Date('2026-07-20T10:10:00'),
         cliente: { nombre: 'Carlos Andrés Meza', correo: 'cmeza@gmail.com' },
         vendedor: 'carlos',
@@ -233,7 +233,7 @@ const FACTURAS_SEMILLA = [
         tipo: 'salida'
     },
     {
-        numero: 39,
+        numero: 40,
         fecha: new Date('2026-07-15T14:20:00'),
         cliente: { nombre: 'Consumidor Final', correo: 'consumidorfinal@pos.com' },
         vendedor: 'medevs',
@@ -282,7 +282,7 @@ exports.facturacion = async (req, res) => {
     } catch (error) {
         console.error("Error al cargar facturación:", error);
         res.status(500).send("Error al cargar facturación: " + error.message);
-    }
+    };
 };
 
 // Facturas de entradas
@@ -301,7 +301,7 @@ exports.facturasEntrada = async (req, res) => {
     } catch (error) {
         console.error("Error al cargar facturas de entrada:", error);
         res.status(500).send("Error al cargar facturas de entrada: " + error.message);
-    }
+    };
 };
 
 // Registro de entradas
@@ -316,7 +316,7 @@ exports.registroEntradas = async (req, res) => {
     } catch (error) {
         console.error("Error al cargar registro de entradas:", error);
         res.status(500).send("Error: " + error.message);
-    }
+    };
 };
 
 // Clientes
@@ -331,7 +331,7 @@ exports.clientes = async (req, res) => {
     } catch (error) {
         console.error("Error al cargar clientes:", error);
         res.status(500).send("Error al cargar clientes: " + error.message);
-    }
+    };
 };
 
 // Productos facturación
@@ -346,7 +346,7 @@ exports.productos = async (req, res) => {
     } catch (error) {
         console.error("Error al cargar productos para facturación:", error);
         res.status(500).send("Error al cargar productos: " + error.message);
-    }
+    };
 };
 
 // Descargar/Imprimir Factura en PDF
@@ -355,7 +355,6 @@ exports.descargarPDF = async (req, res) => {
         const id = req.params.id;
         let factura;
 
-        // Buscar por ObjectId o por número de factura
         if (id && id.match(/^[0-9a-fA-F]{24}$/)) {
             factura = await Factura.findById(id).lean();
         } else if (!isNaN(Number(id))) {
@@ -366,17 +365,14 @@ exports.descargarPDF = async (req, res) => {
             return res.status(404).send('Factura no encontrada');
         }
 
-        res.render('facturacion/factura_imprimir', {
-            factura,
-            request: req
-        });
+        res.render('facturacion/factura_imprimir', { factura, request: req });
     } catch (error) {
         console.error("Error al generar PDF de factura:", error);
         res.status(500).send("Error al generar PDF: " + error.message);
-    }
+    };
 };
 
-// Crear nueva factura
+// Crear nueva factura (venta)
 exports.crearFactura = async (req, res) => {
     try {
         const {
@@ -388,7 +384,8 @@ exports.crearFactura = async (req, res) => {
             vendedor
         } = req.body;
 
-        // Obtener el último número de factura
+        const usuario = getUsuario(req);
+
         const ultimaFactura = await Factura.findOne().sort({ numero: -1 });
         const nuevoNumero = ultimaFactura && ultimaFactura.numero ? ultimaFactura.numero + 1 : 1;
 
@@ -396,7 +393,6 @@ exports.crearFactura = async (req, res) => {
         const precio = Number(precioUnitario) || 0;
         const total = cant * precio;
 
-        // Cálculo de IVA 19% y base gravable
         const ivaPorcentaje = 19;
         const baseGravable = Math.round(total / (1 + (ivaPorcentaje / 100)));
         const iva = total - baseGravable;
@@ -425,9 +421,45 @@ exports.crearFactura = async (req, res) => {
 
         await nuevaFactura.save();
 
+        const accion = `CREÓ FACTURA #${nuevaFactura.numero} - CLIENTE: ${nuevaFactura.cliente.nombre} - TOTAL: ${formatoCop(nuevaFactura.total)}`;
+        await Auditoria.create({ usuario, accion, modulo: "FACTURACION" });
+        await logger.escribirArchivo(accion, usuario, "FACTURACION");
+
         res.redirect('/facturacion');
     } catch (error) {
         console.error("Error al crear factura:", error);
         res.status(500).send("Error al crear factura: " + error.message);
-    }
+    };
+};
+
+// Registrar entrada (desde facturación)
+exports.registrarEntrada = async (req, res) => {
+    try {
+        const { numero, proveedor, registro, fecha, producto, cantidad, precio } = req.body;
+        const unidades = Number(cantidad);
+        const precioUnitario = Number(precio);
+
+        if (!numero || !proveedor || !producto || !Number.isFinite(unidades) || unidades < 1 || !Number.isFinite(precioUnitario) || precioUnitario < 0) {
+            return res.redirect('/facturacion/entradas?error=datos');
+        }
+
+        const usuario = getUsuario(req);
+
+        await EntradaInventario.create({
+            numero, proveedor, registro: registro || 'Sistema', fecha: fecha || Date.now(),
+            productos: [{ producto, cantidad: unidades, precio: precioUnitario }],
+            total: unidades * precioUnitario
+        });
+
+        await Producto.findByIdAndUpdate(producto, { $inc: { stock: unidades } });
+
+        const accion = `REGISTRO ENTRADA #${numero} - PROVEEDOR: ${proveedor} - PRODUCTO: ${producto}`;
+        await Auditoria.create({ usuario, accion, modulo: "FACTURACION" });
+        await logger.escribirArchivo(accion, usuario, "FACTURACION");
+
+        return res.redirect('/facturacion/entradas');
+    } catch (err) {
+        console.error('Error registrando entrada:', err);
+        return res.redirect('/facturacion/entradas?error=servidor');
+    };
 };

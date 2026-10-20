@@ -18,6 +18,7 @@ const auditoriaSchema = new mongoose.Schema({
             "PRODUCTOS",
             "INVENTARIO",
             "FACTURACION",
+            "FINANZAS",
             "CONFIGURACION"
         ],
         required: true

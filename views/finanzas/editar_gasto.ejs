@@ -1,0 +1,100 @@
+<%- include('../partials/header') %>
+
+<header class="dashboard-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 pb-2 border-bottom">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill fw-semibold">
+                    <i class="bi bi-pencil-square me-1"></i><%= gasto ? 'Editar' : 'Nuevo' %> Gasto Operativo
+                </span>
+                <h2 class="h3 fw-bold text-dark mb-0"><%= gasto ? 'Editar gasto: ' + gasto.concepto : 'Registrar nuevo egreso' %></h2>
+            </div>
+        </div>
+        <div>
+            <a href="/finanzas/gastos" class="btn btn-outline-secondary btn-sm rounded-2">
+                <i class="bi bi-arrow-left me-1"></i> Volver al listado
+            </a>
+        </div>
+    </div>
+</header>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-3 p-4 bg-white">
+            <form method="post" action="<%= gasto ? '/finanzas/gastos/editar/' + gasto._id : '/finanzas/gastos/nuevo' %>" class="needs-validation" novalidate>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-muted">Concepto / Motivo *</label>
+                    <input type="text" class="form-control rounded-2 shadow-none" name="concepto" value="<%= gasto ? gasto.concepto : '' %>" placeholder="Ej: Arriendo local, Servicios, Compra insumos" required minlength="4" maxlength="150">
+                    <div class="invalid-feedback">El concepto es obligatorio (mínimo 4 caracteres).</div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold text-muted">Categoría *</label>
+                        <select class="form-select rounded-2 shadow-none" name="categoria" required>
+                            <% categorias_opciones.forEach(function(cat) { %>
+                                <option value="<%= cat %>" <%= gasto && gasto.categoria === cat ? 'selected' : '' %>><%= cat %></option>
+                            <% }); %>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold text-muted">Valor ($ COP) *</label>
+                        <input type="number" step="1" min="1" class="form-control rounded-2 shadow-none" name="valor" value="<%= gasto ? gasto.valor : '' %>" placeholder="0" required>
+                        <div class="invalid-feedback">El valor debe ser mayor a cero.</div>
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold text-muted">Fecha *</label>
+                        <input type="date" class="form-control rounded-2 shadow-none" name="fecha" value="<%= gasto ? new Date(gasto.fecha).toISOString().split('T')[0] : new Date().toISOString().split('T')[0] %>" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold text-muted">Método de Pago *</label>
+                        <select class="form-select rounded-2 shadow-none" name="metodo_pago" required>
+                            <% metodos_opciones.forEach(function(met) { %>
+                                <option value="<%= met %>" <%= gasto && gasto.metodo_pago === met ? 'selected' : '' %>><%= met %></option>
+                            <% }); %>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-muted">Proveedor / Beneficiario</label>
+                    <input type="text" class="form-control rounded-2 shadow-none" name="proveedor" value="<%= gasto ? gasto.proveedor : '' %>" placeholder="Nombre de la empresa o persona" minlength="3" maxlength="150">
+                </div>
+
+                <div class="mb-0">
+                    <label class="form-label small fw-semibold text-muted">Descripción u Observaciones</label>
+                    <textarea class="form-control rounded-2 shadow-none" name="descripcion" rows="3" placeholder="Detalle adicional..."><%= gasto ? gasto.descripcion : '' %></textarea>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                    <a href="/finanzas/gastos" class="btn btn-sm btn-outline-secondary rounded-2">Cancelar</a>
+                    <button type="submit" class="btn btn-sm btn-danger rounded-2 px-3 fw-medium">
+                        <i class="bi bi-check-circle me-1"></i> <%= gasto ? 'Actualizar' : 'Guardar' %> gasto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
+
+<script>
+// Bootstrap validation
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+</script>

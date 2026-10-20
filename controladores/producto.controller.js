@@ -1,6 +1,11 @@
 const Producto = require("../modelos/producto.model");
 const Auditoria = require("../modelos/auditoria.model");
-const logger = require('../services/logs')
+const logger = require('../services/logs');
+
+function getUsuario(req) {
+    return (req.session && req.session.logueado && req.session.logueado.nombre) ? req.session.logueado.nombre : 'Sistema';
+}
+
 // Listar productos
 exports.productos = async (req, res) => {
     try {
@@ -13,7 +18,7 @@ exports.productos = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).send("Error al cargar los productos.");
-    }
+    };
 };
 
 // Mostrar formulario crear
@@ -37,44 +42,39 @@ exports.crearProducto = async (req, res) => {
 
         await producto.save();
 
-        await Auditoria.create({
-            usuario: (req.session && req.session.logueado && req.session.logueado.nombre) ? req.session.logueado.nombre : 'Sistema',
-            accion: `CREO UN PRODUCTO: ${producto.nombre}`,
-            modulo: "PRODUCTOS"
-        });
-        logger.escribirArchivo(accion, usuario);
+        const usuario = getUsuario(req);
+        const accion = `CREO UN PRODUCTO: ${producto.nombre}`;
+        await Auditoria.create({ usuario, accion, modulo: "PRODUCTOS" });
+        await logger.escribirArchivo(accion, usuario, "PRODUCTOS");
+
         res.redirect("/productos");
 
     } catch (error) {
         console.error(error);
         res.status(500).send("Error al crear el producto.");
-    }
+    };
 };
 
 // Mostrar formulario actualizar
 exports.vistaActualizarProducto = async (req, res) => {
     try {
-
         const producto = await Producto.findById(req.params.id);
 
         if (!producto) {
             return res.status(404).send("Producto no encontrado.");
         }
 
-        res.render("productos/actualizar_productos", {
-            producto
-        });
+        res.render("productos/actualizar_productos", { producto });
 
     } catch (error) {
         console.error(error);
         res.status(500).send("Error.");
-    }
+    };
 };
 
 // Actualizar producto
 exports.actualizarProducto = async (req, res) => {
     try {
-
         const producto = await Producto.findById(req.params.id);
 
         if (!producto) {
@@ -91,18 +91,17 @@ exports.actualizarProducto = async (req, res) => {
 
         await producto.save();
 
-        await Auditoria.create({
-            usuario: (req.session && req.session.logueado && req.session.logueado.nombre) ? req.session.logueado.nombre : 'Sistema',
-            accion: `ACTUALIZO UN PRODUCTO: ${producto.nombre}`,
-            modulo: "PRODUCTOS"
-        });
+        const usuario = getUsuario(req);
+        const accion = `ACTUALIZO UN PRODUCTO: ${producto.nombre}`;
+        await Auditoria.create({ usuario, accion, modulo: "PRODUCTOS" });
+        await logger.escribirArchivo(accion, usuario, "PRODUCTOS");
 
         res.redirect("/productos");
 
     } catch (error) {
         console.error(error);
         res.status(500).send("Error al actualizar el producto.");
-    }
+    };
 };
 
 // Alternar estado activo/inactivo
@@ -118,23 +117,21 @@ exports.toggleProducto = async (req, res) => {
         producto.fecha_actualizacion = Date.now();
         await producto.save();
 
-        await Auditoria.create({
-            usuario: (req.session && req.session.logueado && req.session.logueado.nombre) ? req.session.logueado.nombre : 'Sistema',
-            accion: `${producto.activo ? 'ACTIVO' : 'DESACTIVO'} UN PRODUCTO: ${producto.nombre}`,
-            modulo: "PRODUCTOS"
-        });
+        const usuario = getUsuario(req);
+        const accion = `${producto.activo ? 'ACTIVO' : 'DESACTIVO'} UN PRODUCTO: ${producto.nombre}`;
+        await Auditoria.create({ usuario, accion, modulo: "PRODUCTOS" });
+        await logger.escribirArchivo(accion, usuario, "PRODUCTOS");
 
         res.redirect("/productos");
     } catch (error) {
         console.error(error);
         res.status(500).send("Error al cambiar el estado del producto.");
-    }
+    };
 };
 
 // Eliminar producto
 exports.eliminarProducto = async (req, res) => {
     try {
-
         const producto = await Producto.findById(req.params.id);
 
         if (!producto) {
@@ -145,16 +142,15 @@ exports.eliminarProducto = async (req, res) => {
 
         await producto.deleteOne();
 
-        await Auditoria.create({
-            usuario: (req.session && req.session.logueado && req.session.logueado.nombre) ? req.session.logueado.nombre : 'Sistema',
-            accion: `ELIMINO UN PRODUCTO: ${nombre}`,
-            modulo: "PRODUCTOS"
-        });
+        const usuario = getUsuario(req);
+        const accion = `ELIMINO UN PRODUCTO: ${nombre}`;
+        await Auditoria.create({ usuario, accion, modulo: "PRODUCTOS" });
+        await logger.escribirArchivo(accion, usuario, "PRODUCTOS");
 
         res.redirect("/productos");
 
     } catch (error) {
         console.error(error);
         res.status(500).send("Error al eliminar el producto.");
-    }
+    };
 };

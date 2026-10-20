@@ -1,5 +1,6 @@
 const Usuario = require('../modelos/usuario.model');
 const Auditoria = require('../modelos/auditoria.model');
+const logger = require('../services/logs');
 
 // Brute force simple en memoria (como Django cache)
 const loginFails = new Map(); // ip -> {count, firstAt}
@@ -131,7 +132,9 @@ exports.login_view = async (req, res) => {
         // Limpiar mensajes de éxito para no mostrar doble? mantenemos
         // Auditoria login
         try {
-            await Auditoria.create({ usuario: usuario.nombre, accion: 'INICIO SESION', modulo: 'USUARIOS' });
+            const actor = usuario.nombre;
+            await Auditoria.create({ usuario: actor, accion: 'INICIO SESION', modulo: 'USUARIOS' });
+            await logger.escribirArchivo('INICIO SESION', actor, 'USUARIOS');
         } catch(e){}
 
         return res.redirect('/inicio');
@@ -149,7 +152,9 @@ exports.logout_view = async (req, res) => {
     const logueado = req.session.logueado;
     if (logueado){
         try {
-            await Auditoria.create({ usuario: logueado.nombre || '', accion: 'CERRO SESION', modulo: 'USUARIOS' });
+            const actor = logueado.nombre || '';
+            await Auditoria.create({ usuario: actor, accion: 'CERRO SESION', modulo: 'USUARIOS' });
+            await logger.escribirArchivo('CERRO SESION', actor, 'USUARIOS');
         } catch(e){}
     }
     req.session.destroy(() => {
@@ -251,6 +256,7 @@ exports.crear_usuarios = async (req, res) => {
         try {
             const actor = req.session.logueado ? req.session.logueado.nombre : 'sistema';
             await Auditoria.create({ usuario: actor, accion: `CREO USUARIO: ${nuevo.nombre}`, modulo: 'USUARIOS' });
+            await logger.escribirArchivo(`CREO USUARIO: ${nuevo.nombre}`, actor, 'USUARIOS');
         } catch(e){}
         pushMessage(req, `Usuario ${nuevo.nombre} creado correctamente.`, 'success');
         return res.redirect('/usuarios');
@@ -340,6 +346,7 @@ exports.editar_usuarios = async (req, res) => {
         try {
             const actor = logueado.nombre || 'sistema';
             await Auditoria.create({ usuario: actor, accion: `ACTUALIZÓ PERFIL/USUARIO: ${usuario.nombre}`, modulo: 'USUARIOS' });
+            await logger.escribirArchivo(`ACTUALIZÓ PERFIL/USUARIO: ${usuario.nombre}`, actor, 'USUARIOS');
         } catch(e){}
 
         pushMessage(req, `El usuario ${usuario.nombre} fue actualizado correctamente.`, 'success');
@@ -425,7 +432,9 @@ exports.cambiar_estado_usuario = async (req, res) => {
         await usuario.save();
         const estado = usuario.activo ? 'ACTIVO' : 'INACTIVO';
         try {
-            await Auditoria.create({ usuario: actor.nombre, accion: `CAMBIO ESTADO USUARIO: ${usuario.nombre} → ${estado}`, modulo: 'USUARIOS' });
+            const accion = `CAMBIO ESTADO USUARIO: ${usuario.nombre} → ${estado}`;
+            await Auditoria.create({ usuario: actor.nombre, accion, modulo: 'USUARIOS' });
+            await logger.escribirArchivo(accion, actor.nombre, 'USUARIOS');
         } catch(e){}
         if (usuario.activo){
             pushMessage(req, `El usuario ${usuario.nombre} ahora está activo.`, 'success');

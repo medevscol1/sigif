@@ -2,6 +2,7 @@ const EmpresaConfig = require('../modelos/configuracion.model');
 const Usuario = require('../modelos/usuario.model');
 const Auditoria = require('../modelos/auditoria.model');
 const logger = require('../services/logs');
+const backup = require('../configuracion/backup');
 
 function getUsuario(req) {
     return (req.session && req.session.logueado && req.session.logueado.nombre) ? req.session.logueado.nombre : 'Sistema';
@@ -67,48 +68,87 @@ exports.configuracion = async (req, res) => {
 exports.backupypermisos = async (req, res) => {
     try {
         const usuarios = await Usuario.find().lean();
+        let backupConfig = backup.getBackupSettings();
 
         if (req.method === 'POST') {
-            const { user_id, rol_asignar } = req.body;
+            const { user_id, rol_asignar, email_to, email_from, schedule, enabled, email_enabled, generate_now } = req.body;
             const usuario = getUsuario(req);
             const actor = req.session.logueado ? await Usuario.findById(req.session.logueado.id).lean() : null;
 
-            const cargosValidos = Usuario.schema.path('cargo').enumValues;
-            if (!cargosValidos.includes(rol_asignar)) {
-                req.session.messages = req.session.messages || [];
-                req.session.messages.push({ text: 'Rol no válido.', tags: 'error', type: 'error' });
-                return res.redirect('/configuracion/backup');
+            if (email_to || email_from || schedule || enabled !== undefined || email_enabled !== undefined) {
+                try {
+                    backupConfig = await backup.updateBackupSettings({
+                        enabled: enabled === 'on' || enabled === 'true' || enabled === true,
+                        schedule: schedule || backupConfig.schedule,
+                        emailEnabled: email_enabled === 'on' || email_enabled === 'true' || email_enabled === true,
+                        emailFrom: email_from || backupConfig.emailFrom,
+                        emailTo: email_to || backupConfig.emailTo.join(','),
+                    });
+
+                    req.session.messages = req.session.messages || [];
+                    req.session.messages.push({ text: 'Configuración del backup guardada correctamente.', tags: 'success', type: 'success' });
+                } catch (error) {
+                    req.session.messages = req.session.messages || [];
+                    req.session.messages.push({ text: 'No se pudo guardar la configuración del backup.', tags: 'error', type: 'error' });
+                    console.error('Error guardando configuración de backup:', error);
+                }
             }
 
-            if (actor && actor.cargo !== 'SuperAdmin' && rol_asignar === 'SuperAdmin') {
-                await Auditoria.create({ usuario: actor.nombre, accion: `INTENTO RECHAZADO DE ASIGNAR SUPERADMIN A USUARIO ${user_id}`, modulo: 'CONFIGURACION' });
-                await logger.escribirArchivo(`INTENTO RECHAZADO DE ASIGNAR SUPERADMIN A USUARIO ${user_id}`, actor.nombre, 'CONFIGURACION');
-                req.session.messages = req.session.messages || [];
-                req.session.messages.push({ text: 'Solo SuperAdmin puede asignar SuperAdmin.', tags: 'error', type: 'error' });
-                return res.redirect('/configuracion/backup');
+            if (generate_now === 'true' || generate_now === 'on' || req.body.action === 'generate') {
+                try {
+                    const result = await backup.backupDatabase();
+                    req.session.messages = req.session.messages || [];
+                    req.session.messages.push({
+                        text: `Backup generado correctamente. Archivo ZIP: ${result.zipPath}`,
+                        tags: 'success',
+                        type: 'success'
+                    });
+                } catch (error) {
+                    req.session.messages = req.session.messages || [];
+                    req.session.messages.push({ text: `Error al generar backup: ${error.message}`, tags: 'error', type: 'error' });
+                    console.error('Error al generar backup manual:', error);
+                }
             }
 
-            try {
-                const user = await Usuario.findById(user_id);
-                if (!user) throw new Error('Usuario no encontrado');
-                if (user.es_superadmin_principal) throw new Error('SuperAdmin principal no modificable');
+            if (rol_asignar !== undefined || user_id) {
+                const cargosValidos = Usuario.schema.path('cargo').enumValues;
+                if (!cargosValidos.includes(rol_asignar)) {
+                    req.session.messages = req.session.messages || [];
+                    req.session.messages.push({ text: 'Rol no válido.', tags: 'error', type: 'error' });
+                    return res.redirect('/configuracion/backup');
+                }
 
-                user.cargo = rol_asignar;
-                await user.save();
+                if (actor && actor.cargo !== 'SuperAdmin' && rol_asignar === 'SuperAdmin') {
+                    await Auditoria.create({ usuario: actor.nombre, accion: `INTENTO RECHAZADO DE ASIGNAR SUPERADMIN A USUARIO ${user_id}`, modulo: 'CONFIGURACION' });
+                    await logger.escribirArchivo(`INTENTO RECHAZADO DE ASIGNAR SUPERADMIN A USUARIO ${user_id}`, actor.nombre, 'CONFIGURACION');
+                    req.session.messages = req.session.messages || [];
+                    req.session.messages.push({ text: 'Solo SuperAdmin puede asignar SuperAdmin.', tags: 'error', type: 'error' });
+                    return res.redirect('/configuracion/backup');
+                }
 
-                await Auditoria.create({ usuario, accion: `ACTUALIZÓ EL CARGO DE ${user.nombre}: ${rol_asignar}`, modulo: 'CONFIGURACION' });
-                await logger.escribirArchivo(`ACTUALIZÓ EL CARGO DE ${user.nombre}: ${rol_asignar}`, usuario, 'CONFIGURACION');
+                try {
+                    const user = await Usuario.findById(user_id);
+                    if (!user) throw new Error('Usuario no encontrado');
+                    if (user.es_superadmin_principal) throw new Error('SuperAdmin principal no modificable');
 
-                req.session.messages = req.session.messages || [];
-                req.session.messages.push({ text: `Cargo de ${user.nombre} actualizado a ${user.cargo}.`, tags: 'success', type: 'success' });
-            } catch (e) {
-                req.session.messages = req.session.messages || [];
-                req.session.messages.push({ text: e.message, tags: 'error', type: 'error' });
+                    user.cargo = rol_asignar;
+                    await user.save();
+
+                    await Auditoria.create({ usuario, accion: `ACTUALIZÓ EL CARGO DE ${user.nombre}: ${rol_asignar}`, modulo: 'CONFIGURACION' });
+                    await logger.escribirArchivo(`ACTUALIZÓ EL CARGO DE ${user.nombre}: ${rol_asignar}`, usuario, 'CONFIGURACION');
+
+                    req.session.messages = req.session.messages || [];
+                    req.session.messages.push({ text: `Cargo de ${user.nombre} actualizado a ${user.cargo}.`, tags: 'success', type: 'success' });
+                } catch (e) {
+                    req.session.messages = req.session.messages || [];
+                    req.session.messages.push({ text: e.message, tags: 'error', type: 'error' });
+                }
             }
+
             return res.redirect('/configuracion/backup');
         }
 
-        res.render('configuracion/backupypermisos', { usuarios, request: req });
+        res.render('configuracion/backupypermisos', { usuarios, request: req, backup: backupConfig });
     } catch (error) {
         console.error('Error en backup/permisos:', error);
         res.status(500).send('Error: ' + error.message);

@@ -1,8 +1,130 @@
 <%- include('../partials/header') %>
 
-<section>
-  <h1>Backup y Permisos</h1>
-  <p>Plantilla convertida: operaciones de backup necesitan endpoints en Node.</p>
+<section class="container py-4">
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h1 class="h3 mb-1">Configuración de respaldos</h1>
+          <p class="text-muted mb-0">Los datos se leen desde el archivo .env del proyecto.</p>
+        </div>
+        <span class="badge bg-<%= backup.enabled ? 'success' : 'secondary' %> rounded-pill">
+          <%= backup.enabled ? 'Activo' : 'Inactivo' %>
+        </span>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-6">
+          <div class="card border-0 bg-light h-100">
+            <div class="card-body">
+              <h2 class="h5 mb-3">Programación del backup</h2>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Estado</label>
+                <input class="form-control" value="<%= backup.enabled ? 'Activado' : 'Desactivado' %>" disabled>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Cron</label>
+                <input class="form-control" value="<%= backup.schedule %>" disabled>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Zona horaria</label>
+                <input class="form-control" value="<%= backup.timezone %>" disabled>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Ruta local de almacenamiento</label>
+                <input class="form-control" value="<%= backup.dir %>" disabled>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-6">
+          <div class="card border-0 bg-light h-100">
+            <div class="card-body">
+              <h2 class="h5 mb-3">Envio por email (.zip)</h2>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Email habilitado</label>
+                <input class="form-control" value="<%= backup.emailEnabled ? 'Sí' : 'No' %>" disabled>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Servidor SMTP</label>
+                <input class="form-control" value="<%= backup.emailHost %>:<%= backup.emailPort %>" disabled>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Usuario SMTP</label>
+                <input class="form-control" value="<%= backup.emailUser || 'sin configurar' %>" disabled>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Destinatarios</label>
+                <input class="form-control" value="<%= backup.emailTo.length ? backup.emailTo.join(', ') : 'sin configurar' %>" disabled>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 card border-0 bg-light">
+        <div class="card-body">
+          <h2 class="h5 mb-3">Guardar configuración del correo receptor</h2>
+
+          <form method="POST" action="/configuracion/backup">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Correo que envía el backup</label>
+                <input type="email" class="form-control" name="email_from" value="<%= backup.emailFrom || '' %>" placeholder="ejemplo@correo.com">
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Correo destinatario del backup</label>
+                <input type="text" class="form-control" name="email_to" value="<%= backup.emailTo.join(', ') %>" placeholder="correo1@dominio.com, correo2@dominio.com">
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Cron del backup</label>
+                <input type="text" class="form-control" name="schedule" value="<%= backup.schedule %>">
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Habilitar backup</label>
+                <div class="form-check form-switch mt-2">
+                  <input class="form-check-input" type="checkbox" name="enabled" <%= backup.enabled ? 'checked' : '' %>>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Enviar por correo</label>
+                <div class="form-check form-switch mt-2">
+                  <input class="form-check-input" type="checkbox" name="email_enabled" <%= backup.emailEnabled ? 'checked' : '' %>>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-3">
+              <button type="submit" class="btn btn-primary">Guardar configuración</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="mt-4 border rounded p-3 bg-dark text-light">
+        <h2 class="h5 text-white mb-3">Generar backup ahora</h2>
+        <form method="POST" action="/configuracion/backup">
+          <input type="hidden" name="generate_now" value="true">
+          <button type="submit" class="btn btn-warning text-dark">Generar backup ahora</button>
+        </form>
+      </div>
+
+      
+    </div>
+  </div>
 </section>
 
 <%- include('../partials/footer') %>

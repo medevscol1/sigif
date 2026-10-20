@@ -218,9 +218,13 @@ app.get('/finanzas/caja-conciliacion', finanzasController.cajaConciliacion);
 app.get('/finanzas/reportes', finanzasController.cajaConciliacion);
 
 // ============ CONFIGURACION ============
-app.get('/configuracion', configuracionController.configuracion);
+app.get('/configuracion', (req, res) => {
+    res.redirect('/configuracion/backup');
+});
 app.get('/configuracion/backup', configuracionController.backupypermisos);
-app.post('/configuracion', configuracionController.configuracion);
+app.post('/configuracion', (req, res) => {
+    res.redirect('/configuracion/backup');
+});
 app.post('/configuracion/backup', configuracionController.backupypermisos);
 
 // ============ AUDITORIA ============
@@ -240,12 +244,18 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 1514;
+const backupSettings = backup.getBackupSettings();
 
-cron.schedule('0 0 0 * * *', async () => {
-    console.log('Realizando backup diario de la base de datos');
-    try { await backup.backupDatabase(); }
-    catch (error) { console.error('Error al realizar el backup diario:', error); }
-}, { timezone: process.env.BACKUP_TIMEZONE || 'America/Bogota', noOverlap: true });
+if (backupSettings.enabled) {
+    cron.schedule(backupSettings.schedule, async () => {
+        console.log('Realizando backup programado de la base de datos');
+        try { await backup.backupDatabase(); }
+        catch (error) { console.error('Error al realizar el backup programado:', error); }
+    }, { timezone: backupSettings.timezone, noOverlap: true });
+    console.log(`Backup automático activo con cron: ${backupSettings.schedule} (${backupSettings.timezone})`);
+} else {
+    console.log('Backup automático desactivado por BACKUP_ENABLED=false');
+}
 
 conexion
     .then(() => { console.log("Conexion exitosa a MongoDB"); })
